@@ -134,6 +134,26 @@ Backend entry: `apps/api/dist/server.js`
 
 Frontend build output: `apps/web/dist`
 
+## Cloudflare Pages
+
+Cloudflare Pages should be used for the React frontend only in the current architecture.
+
+MathAtlas still uses an Express.js backend with Prisma and PostgreSQL, so the API should be deployed separately on a Node-friendly platform such as Render, Railway, Fly.io, or a VPS. Then point the frontend to that API with `VITE_API_URL`.
+
+Recommended Cloudflare Pages settings for this monorepo:
+
+- Root directory: repository root
+- Build command: `npm run build:web`
+- Build output directory: `apps/web/dist`
+
+Set this environment variable in Cloudflare Pages:
+
+```env
+VITE_API_URL=https://your-api-domain.example.com/api
+```
+
+The file [apps/web/public/_redirects](/D:/MathAtlas/apps/web/public/_redirects) is included so React Router routes resolve correctly on Cloudflare Pages.
+
 ## Key Routes
 
 Frontend pages:

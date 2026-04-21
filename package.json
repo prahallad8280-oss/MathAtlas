@@ -6,9 +6,11 @@
     "apps/*"
   ],
   "scripts": {
+    "postinstall": "npm run prisma:generate",
     "dev": "concurrently \"npm run dev --workspace @mathatlas/api\" \"npm run dev --workspace @mathatlas/web\"",
     "dev:api": "npm run dev --workspace @mathatlas/api",
     "dev:web": "npm run dev --workspace @mathatlas/web",
+    "build:web": "npm run build --workspace @mathatlas/web",
     "db:up": "docker compose up -d db",
     "db:down": "docker compose down",
     "db:logs": "docker compose logs -f db",
