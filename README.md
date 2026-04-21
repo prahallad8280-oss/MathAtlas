@@ -152,7 +152,7 @@ Set this environment variable in Cloudflare Pages:
 VITE_API_URL=https://your-api-domain.example.com/api
 ```
 
-The file [apps/web/public/_redirects](/D:/MathAtlas/apps/web/public/_redirects) is included so React Router routes resolve correctly on Cloudflare Pages.
+React Router SPA routing is handled in the Cloudflare Worker deploy path by `not_found_handling: "single-page-application"` in [wrangler.jsonc](/D:/MathAtlas/wrangler.jsonc).
 
 ## Cloudflare Workers Builds
 
@@ -163,6 +163,8 @@ Recommended Worker build settings:
 - Root directory: repository root
 - Build command: `npm run build:web`
 - Deploy command: `npx wrangler deploy`
+
+Do not ship a Pages-style `_redirects` file with this Worker deployment. SPA fallback is already handled by the `assets.not_found_handling` setting in [wrangler.jsonc](/D:/MathAtlas/wrangler.jsonc).
 
 If your Worker should use a different name than `mathatlas`, update the `name` field in [wrangler.jsonc](/D:/MathAtlas/wrangler.jsonc).
 
