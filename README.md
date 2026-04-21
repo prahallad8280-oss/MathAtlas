@@ -154,6 +154,18 @@ VITE_API_URL=https://your-api-domain.example.com/api
 
 The file [apps/web/public/_redirects](/D:/MathAtlas/apps/web/public/_redirects) is included so React Router routes resolve correctly on Cloudflare Pages.
 
+## Cloudflare Workers Builds
+
+If you connected this repository as a Cloudflare Worker build instead of a Pages project, the repository now includes [wrangler.jsonc](/D:/MathAtlas/wrangler.jsonc) at the root so `npx wrangler deploy` can deploy the built frontend from `apps/web/dist`.
+
+Recommended Worker build settings:
+
+- Root directory: repository root
+- Build command: `npm run build:web`
+- Deploy command: `npx wrangler deploy`
+
+If your Worker should use a different name than `mathatlas`, update the `name` field in [wrangler.jsonc](/D:/MathAtlas/wrangler.jsonc).
+
 ## Key Routes
 
 Frontend pages:

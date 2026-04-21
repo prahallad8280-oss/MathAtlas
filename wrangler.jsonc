@@ -1,0 +1,9 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "mathatlas",
+  "compatibility_date": "2026-04-21",
+  "assets": {
+    "directory": "./apps/web/dist",
+    "not_found_handling": "single-page-application"
+  }
+}
