@@ -1,24 +1,86 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiRequest } from "../lib/api";
-import { excerpt, formatDateTime } from "../lib/format";
-import type { DashboardPayload } from "../types";
+import { excerpt } from "../lib/format";
+import type { DashboardPayload, Subject } from "../types";
+
+type SubjectAccent = {
+  icon: string;
+  tone: string;
+  description: string;
+};
+
+const subjectAccents: Record<string, SubjectAccent> = {
+  "real-analysis": {
+    icon: "∫",
+    tone: "blue",
+    description: "Sequences, limits, continuity, differentiation, and measure ideas.",
+  },
+  "linear-algebra": {
+    icon: "⊞",
+    tone: "green",
+    description: "Matrices, vector spaces, linear maps, and spectral viewpoints.",
+  },
+  "abstract-algebra": {
+    icon: "◈",
+    tone: "purple",
+    description: "Groups, rings, fields, homomorphisms, and algebraic structure.",
+  },
+  topology: {
+    icon: "◎",
+    tone: "orange",
+    description: "Metric spaces, connectedness, compactness, and continuity.",
+  },
+  "ordinary-differential-equations": {
+    icon: "d/dx",
+    tone: "teal",
+    description: "First order systems, qualitative behavior, and solvable models.",
+  },
+};
+
+function getSubjectAccent(subject: Subject): SubjectAccent {
+  return (
+    subjectAccents[subject.slug] ?? {
+      icon: "∑",
+      tone: "blue",
+      description: "Conceptual practice, past-year questions, and linked mathematics.",
+    }
+  );
+}
+
+function formatCount(value: number) {
+  return new Intl.NumberFormat("en-IN").format(value);
+}
+
+function formatShortDate(value: string) {
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(new Date(value));
+}
 
 export function HomePage() {
   const [data, setData] = useState<DashboardPayload | null>(null);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    async function loadDashboard() {
+    async function loadHomeData() {
       try {
-        const payload = await apiRequest<DashboardPayload>("/meta/dashboard");
-        setData(payload);
+        const [dashboardPayload, subjectsPayload] = await Promise.all([
+          apiRequest<DashboardPayload>("/meta/dashboard"),
+          apiRequest<Subject[]>("/meta/subjects"),
+        ]);
+
+        setData(dashboardPayload);
+        setSubjects(subjectsPayload);
       } catch (loadError) {
-        setError(loadError instanceof Error ? loadError.message : "Unable to load dashboard.");
+        setError(loadError instanceof Error ? loadError.message : "Unable to load the MathAtlas home page.");
       }
     }
 
-    void loadDashboard();
+    void loadHomeData();
   }, []);
 
   if (error) {
@@ -29,180 +91,213 @@ export function HomePage() {
     return <div className="empty-state">Loading the mathematical atlas...</div>;
   }
 
-  const featuredSubjects = Array.from(
-    new Map(data.recentQuestions.map((question) => [question.subject.id, question.subject])).values(),
-  );
-  const activityItems = [
+  const featuredSubjects = [...subjects]
+    .sort((left, right) => (right._count?.questions ?? 0) - (left._count?.questions ?? 0))
+    .slice(0, 5);
+
+  const fallbackBooks = ["Real Analysis", "Linear Algebra", "Abstract Algebra", "Topology"];
+  const heroBooks = [...featuredSubjects.map((subject) => subject.name), ...fallbackBooks].slice(0, 4);
+
+  const readingItems = [
     ...data.recentConcepts.map((concept) => ({
-      key: `concept-${concept.id}`,
+      id: `concept-${concept.id}`,
       href: `/concepts/${concept.slug}`,
       title: concept.title,
-      label: concept.type,
+      type: concept.type,
+      excerpt: excerpt(concept.content, 96),
+      createdAt: concept.createdAt,
     })),
     ...data.recentCounterexamples.map((counterexample) => ({
-      key: `counterexample-${counterexample.id}`,
+      id: `counterexample-${counterexample.id}`,
       href: `/counterexamples/${counterexample.slug}`,
       title: counterexample.title,
-      label: "COUNTEREXAMPLE",
+      type: "COUNTEREXAMPLE",
+      excerpt: excerpt(counterexample.explanation, 96),
+      createdAt: counterexample.createdAt,
     })),
-  ].slice(0, 7);
+  ]
+    .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())
+    .slice(0, 3);
+
+  const statCards = [
+    { label: "Questions", value: data.stats.questionCount, icon: "?", tone: "blue" },
+    { label: "Solutions", value: data.stats.solutionCount, icon: "[]", tone: "slate" },
+    { label: "Theorems", value: data.stats.theoremCount, icon: "Σ", tone: "blue" },
+    { label: "Counterexamples", value: data.stats.counterexampleCount, icon: "!", tone: "gold" },
+  ];
+
+  const exploreItems = [
+    {
+      title: "Theorems",
+      value: data.stats.theoremCount,
+      href: "/concepts?type=THEOREM",
+      icon: "□",
+      tone: "blue",
+    },
+    {
+      title: "Definitions",
+      value: data.stats.definitionCount,
+      href: "/concepts?type=DEFINITION",
+      icon: "≡",
+      tone: "green",
+    },
+    {
+      title: "Results",
+      value: data.stats.resultCount,
+      href: "/concepts?type=RESULT",
+      icon: "→",
+      tone: "purple",
+    },
+    {
+      title: "Subjects",
+      value: data.stats.subjectCount,
+      href: "/subjects",
+      icon: "#",
+      tone: "orange",
+    },
+  ];
 
   return (
-    <div className="page-stack">
-      <section className="exchange-layout">
-        <div className="exchange-main-column">
-          <div className="exchange-panel">
-            <div className="exchange-header">
-              <div>
-                <div className="eyebrow">Mathematical Blog</div>
-                <h2>Explore our questions and connected mathematical ideas.</h2>
-                <p>
-                  Browse CSIR NET questions together with theorems, definitions, results, and counterexamples
-                  in one public reading experience with internal wiki-style links.
-                </p>
-              </div>
+    <div className="page-stack home-reference-page">
+      <section className="home-reference-hero">
+        <div className="home-reference-copy">
+          <div className="eyebrow">MathAtlas Platform</div>
+          <h1>Everything CSIR NET Mathematics, in one place.</h1>
+          <p>
+            Previous year questions with solutions, important theorems, counterexamples, and definitions
+            are all organized and interlinked for better understanding.
+          </p>
 
-              <div className="hero-actions">
-                <Link className="primary-button" to="/questions">
-                  Explore Questions
-                </Link>
-                <Link className="ghost-button" to="/concepts">
-                  Open Theory Index
-                </Link>
-              </div>
-            </div>
-
-            <div className="topic-cloud">
-              {featuredSubjects.map((subject) => (
-                <Link className="topic-chip" key={subject.id} to={`/questions?subject=${subject.slug}`}>
-                  {subject.name}
-                </Link>
-              ))}
-              <Link className="topic-chip subtle" to="/subjects">
-                More subjects
-              </Link>
-            </div>
-
-            <div className="feed-toolbar">
-              <div className="feed-toolbar-label">Latest Public Questions</div>
-              <div className="feed-mode-tabs">
-                <span className="feed-mode-pill active">Recent</span>
-                <span className="feed-mode-pill">{data.stats.questionCount} questions</span>
-                <span className="feed-mode-pill">{data.stats.conceptCount} concepts</span>
-                <span className="feed-mode-pill">{data.stats.counterexampleCount} counters</span>
-              </div>
-            </div>
-
-            <div className="feed-list">
-              {data.recentQuestions.map((question) => (
-                <article className="feed-item" key={question.id}>
-                  <div className="feed-metrics">
-                    <strong>{question.year}</strong>
-                    <span>{question.session}</span>
-                    <small>{question.solution ? "1 solution" : "No solution"}</small>
-                  </div>
-
-                  <div className="feed-body">
-                    <Link className="feed-title" to={`/questions/${question.slug}`}>
-                      {excerpt(question.questionText, 120)}
-                    </Link>
-                    <div className="feed-tags">
-                      <Link className="topic-chip dense" to={`/questions?subject=${question.subject.slug}`}>
-                        {question.subject.name}
-                      </Link>
-                      <span className="topic-chip dense subtle">{question.session}</span>
-                    </div>
-                    <div className="feed-meta">
-                      <span>{question.author.name}</span>
-                      <span>{formatDateTime(question.createdAt)}</span>
-                    </div>
-                  </div>
-                </article>
-              ))}
-            </div>
+          <div className="hero-actions">
+            <Link className="primary-button" to="/questions">
+              Browse Questions
+            </Link>
+            <Link className="ghost-button" to="/concepts">
+              Explore Theorems
+            </Link>
           </div>
         </div>
 
-        <aside className="exchange-sidebar">
-          <div className="exchange-side-card accent">
-            <img className="exchange-side-logo" src="/mathatlas-logo.png" alt="MathAtlas logo" />
-            <div>
-              <div className="section-label">MathAtlas</div>
-              <h3>One open mathematics web space for theory and problem solving.</h3>
-              <p>
-                Move from a question to a theorem, then into a counterexample, without breaking the reading
-                flow.
-              </p>
-            </div>
+        <div className="home-reference-visual" aria-hidden="true">
+          <div className="home-visual-equations">
+            <span className="home-equation top">Σ 1/n² = π²/6</span>
+            <span className="home-equation middle">∫ f(x) dx</span>
+            <span className="home-equation curve">y = f(x)</span>
           </div>
 
-          <div className="exchange-side-card">
-            <div className="exchange-side-header">
-              <div className="section-label">Hot Knowledge Links</div>
-              <Link to="/search">Search all</Link>
-            </div>
-            <div className="sidebar-link-list">
-              {activityItems.map((item) => (
-                <Link className="sidebar-link-item" key={item.key} to={item.href}>
-                  <span className="sidebar-link-type">{item.label}</span>
-                  <strong>{item.title}</strong>
-                </Link>
-              ))}
-            </div>
+          <div className="home-book-stack">
+            {heroBooks.map((label, index) => (
+              <div className={`home-book home-book-${index + 1}`} key={`${label}-${index}`}>
+                {label.toUpperCase()}
+              </div>
+            ))}
           </div>
 
-          <div className="exchange-side-card">
-            <div className="section-label">Knowledge Snapshot</div>
-            <div className="sidebar-stat-list">
-              <div className="sidebar-stat-item">
-                <strong>{data.stats.questionCount}</strong>
-                <span>Questions</span>
-              </div>
-              <div className="sidebar-stat-item">
-                <strong>{data.stats.conceptCount}</strong>
-                <span>Theory nodes</span>
-              </div>
-              <div className="sidebar-stat-item">
-                <strong>{data.stats.counterexampleCount}</strong>
-                <span>Counterexamples</span>
-              </div>
-            </div>
-          </div>
-        </aside>
+          <img className="home-visual-logo" src="/mathatlas-logo.png" alt="" />
+        </div>
       </section>
 
-      <section className="grid-two">
-        <article className="content-card">
-          <div className="section-label">Recent Theory Nodes</div>
-          <div className="stack-list">
-            {data.recentConcepts.map((concept) => (
-              <Link key={concept.id} className="list-link-card" to={`/concepts/${concept.slug}`}>
-                <strong>
-                  {concept.type} - {concept.title}
-                </strong>
-                <span>{excerpt(concept.content, 140)}</span>
-                <small>
-                  {concept.author.name} - {formatDateTime(concept.createdAt)}
-                </small>
+      <section className="home-reference-stats">
+        {statCards.map((item) => (
+          <div className="home-stat-card" key={item.label}>
+            <span className={`home-stat-icon ${item.tone}`}>{item.icon}</span>
+            <div>
+              <strong>{formatCount(item.value)}+</strong>
+              <span>{item.label}</span>
+            </div>
+          </div>
+        ))}
+      </section>
+
+      <section className="home-reference-section">
+        <div className="home-section-header">
+          <div>
+            <h2>Browse by Subject</h2>
+            <p>Jump into the biggest question clusters across the CSIR NET mathematics syllabus.</p>
+          </div>
+          <Link className="home-inline-link" to="/subjects">
+            View all subjects
+          </Link>
+        </div>
+
+        <div className="home-subject-grid">
+          {featuredSubjects.map((subject) => {
+            const accent = getSubjectAccent(subject);
+
+            return (
+              <Link className={`home-subject-card ${accent.tone}`} key={subject.id} to={`/questions?subject=${subject.slug}`}>
+                <div className="home-subject-icon">{accent.icon}</div>
+                <h3>{subject.name}</h3>
+                <p>{accent.description}</p>
+                <strong>{formatCount(subject._count?.questions ?? 0)}+ Questions</strong>
+              </Link>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="home-reference-columns">
+        <article className="home-panel">
+          <div className="home-panel-header">
+            <h3>Newest Questions</h3>
+            <Link className="home-inline-link" to="/questions">
+              View all
+            </Link>
+          </div>
+
+          <div className="home-question-list">
+            {data.recentQuestions.slice(0, 4).map((question) => (
+              <Link className="home-question-item" key={question.id} to={`/questions/${question.slug}`}>
+                <div className="home-question-icon">[]</div>
+                <div className="home-question-copy">
+                  <strong>{excerpt(question.questionText, 72)}</strong>
+                  <span>
+                    CSIR NET {question.session === "JUNE" ? "June" : "December"} {question.year}
+                  </span>
+                </div>
+                <span className="home-question-tag">{question.subject.name}</span>
               </Link>
             ))}
           </div>
         </article>
 
-        <article className="content-card">
-          <div className="section-label">Featured Counterexamples</div>
-          <div className="stack-list">
-            {data.recentCounterexamples.map((counterexample) => (
-              <Link
-                key={counterexample.id}
-                className="list-link-card warm"
-                to={`/counterexamples/${counterexample.slug}`}
-              >
-                <strong>COUNTEREXAMPLE - {counterexample.title}</strong>
-                <span>{excerpt(counterexample.explanation, 140)}</span>
-                <small>
-                  {counterexample.author.name} - {formatDateTime(counterexample.createdAt)}
-                </small>
+        <article className="home-panel">
+          <div className="home-panel-header">
+            <h3>Explore More</h3>
+          </div>
+
+          <div className="home-more-grid">
+            {exploreItems.map((item) => (
+              <Link className={`home-more-card ${item.tone}`} key={item.title} to={item.href}>
+                <span className="home-more-icon">{item.icon}</span>
+                <div>
+                  <strong>{item.title}</strong>
+                  <span>{formatCount(item.value)}+</span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </article>
+
+        <article className="home-panel">
+          <div className="home-panel-header">
+            <h3>From the Atlas</h3>
+            <Link className="home-inline-link" to="/search">
+              View all
+            </Link>
+          </div>
+
+          <div className="home-reading-list">
+            {readingItems.map((item, index) => (
+              <Link className="home-reading-item" key={item.id} to={item.href}>
+                <div className={`home-reading-thumb tone-${(index % 3) + 1}`}>
+                  <span>{item.type}</span>
+                </div>
+                <div className="home-reading-copy">
+                  <strong>{item.title}</strong>
+                  <span>{formatShortDate(item.createdAt)}</span>
+                  <p>{item.excerpt}</p>
+                </div>
               </Link>
             ))}
           </div>

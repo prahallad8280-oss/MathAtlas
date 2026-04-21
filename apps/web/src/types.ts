@@ -121,8 +121,13 @@ export type SearchResult = {
 export type DashboardPayload = {
   stats: {
     questionCount: number;
+    solutionCount: number;
     conceptCount: number;
+    theoremCount: number;
+    definitionCount: number;
+    resultCount: number;
     counterexampleCount: number;
+    subjectCount: number;
   };
   recentQuestions: Question[];
   recentConcepts: Concept[];

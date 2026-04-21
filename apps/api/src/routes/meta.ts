@@ -5,36 +5,71 @@ const router = Router();
 const VISITOR_VIEW_KEY = "public-visitor-views";
 
 router.get("/dashboard", async (_req, res) => {
-  const [questionCount, conceptCount, counterexampleCount, recentQuestions, recentConcepts, recentCounterexamples] =
-    await Promise.all([
-      prisma.question.count(),
-      prisma.concept.count(),
-      prisma.counterexample.count(),
-      prisma.question.findMany({
-        take: 5,
-        orderBy: { createdAt: "desc" },
-        include: {
-          subject: true,
-          author: { select: { id: true, name: true } },
+  const [
+    questionCount,
+    solutionCount,
+    conceptCount,
+    theoremCount,
+    definitionCount,
+    resultCount,
+    counterexampleCount,
+    subjectCount,
+    recentQuestions,
+    recentConcepts,
+    recentCounterexamples,
+  ] = await Promise.all([
+    prisma.question.count(),
+    prisma.solution.count(),
+    prisma.concept.count(),
+    prisma.concept.count({ where: { type: "THEOREM" } }),
+    prisma.concept.count({ where: { type: "DEFINITION" } }),
+    prisma.concept.count({ where: { type: "RESULT" } }),
+    prisma.counterexample.count(),
+    prisma.subject.count(),
+    prisma.question.findMany({
+      take: 5,
+      orderBy: { createdAt: "desc" },
+      include: {
+        subject: true,
+        author: { select: { id: true, name: true } },
+        solution: {
+          select: {
+            id: true,
+            content: true,
+            createdAt: true,
+            updatedAt: true,
+            author: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
         },
-      }),
-      prisma.concept.findMany({
-        take: 5,
-        orderBy: { createdAt: "desc" },
-        include: { author: { select: { id: true, name: true } } },
-      }),
-      prisma.counterexample.findMany({
-        take: 5,
-        orderBy: { createdAt: "desc" },
-        include: { author: { select: { id: true, name: true } } },
-      }),
-    ]);
+      },
+    }),
+    prisma.concept.findMany({
+      take: 5,
+      orderBy: { createdAt: "desc" },
+      include: { author: { select: { id: true, name: true } } },
+    }),
+    prisma.counterexample.findMany({
+      take: 5,
+      orderBy: { createdAt: "desc" },
+      include: { author: { select: { id: true, name: true } } },
+    }),
+  ]);
 
   return res.json({
     stats: {
       questionCount,
+      solutionCount,
       conceptCount,
+      theoremCount,
+      definitionCount,
+      resultCount,
       counterexampleCount,
+      subjectCount,
     },
     recentQuestions,
     recentConcepts,
