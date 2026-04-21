@@ -39,58 +39,137 @@ export function ConceptDetailPage() {
 
   return (
     <div className="page-stack">
-      <div className="button-row">
-        <Link className="ghost-button" to="/concepts">
-          Back to Concepts
-        </Link>
-        <ExportPdfButton targetRef={pageRef} filename={concept.slug} />
+      <div className="academic-toolbar">
+        <div className="academic-breadcrumbs">
+          <Link to="/">Home</Link>
+          <span>&gt;</span>
+          <Link to="/concepts">Concepts</Link>
+          <span>&gt;</span>
+          <span>{concept.title}</span>
+        </div>
+
+        <div className="button-row">
+          <Link className="ghost-button" to="/concepts">
+            Back to Concepts
+          </Link>
+          <ExportPdfButton targetRef={pageRef} filename={concept.slug} />
+        </div>
       </div>
 
-      <article className="detail-card" ref={pageRef}>
-        <div className="content-meta-row">
-          <span className="pill">{concept.type}</span>
-          <span className="pill alt">{concept.author.name}</span>
-        </div>
-        <h2>{concept.title}</h2>
-        <MarkdownContent content={concept.content} />
+      <div className="academic-layout">
+        <aside className="academic-sidebar">
+          <div className="academic-side-card">
+            <div className="academic-side-header">Contents</div>
+            <nav className="academic-outline">
+              <a href="#concept-statement">Statement</a>
+              <a href="#concept-counterexamples">Related Counterexamples</a>
+              <a href="#concept-internal-links">Internal References</a>
+              <a href="#concept-metadata">Metadata</a>
+            </nav>
+          </div>
 
-        <div className="metadata">
-          <span>Created: {formatDateTime(concept.createdAt)}</span>
-          <span>Updated: {formatDateTime(concept.updatedAt)}</span>
-        </div>
+          <div className="academic-side-card">
+            <div className="academic-side-header">{concept.type}</div>
+            <p>
+              This concept page follows a textbook reading pattern, pairing the main statement with linked
+              counterexamples and cross-references.
+            </p>
+          </div>
 
-        {concept.relatedCounters && concept.relatedCounters.length > 0 ? (
-          <section className="linked-section">
-            <div className="section-label">Related Counterexamples</div>
-            <div className="chip-list">
-              {concept.relatedCounters.map((item) => (
-                <Link className="chip-link" key={item.id} to={`/counterexamples/${item.slug}`}>
-                  {item.title}
-                </Link>
-              ))}
-            </div>
-          </section>
-        ) : null}
-
-        {concept.linkedItems.length > 0 ? (
-          <section className="linked-section">
-            <div className="section-label">Internal References</div>
-            <div className="chip-list">
-              {concept.linkedItems.map((item) =>
-                item.href ? (
-                  <Link className="chip-link" key={`${item.kind}-${item.title}`} to={item.href}>
-                    {item.label} • {item.title}
+          {concept.relatedCounters && concept.relatedCounters.length > 0 ? (
+            <div className="academic-side-card">
+              <div className="academic-side-header">Counterexamples</div>
+              <div className="academic-side-links">
+                {concept.relatedCounters.map((item) => (
+                  <Link key={item.id} to={`/counterexamples/${item.slug}`}>
+                    {item.title}
                   </Link>
-                ) : (
-                  <span className="chip-link unresolved" key={`${item.kind}-${item.title}`}>
-                    {item.label} • {item.title}
-                  </span>
-                ),
-              )}
+                ))}
+              </div>
+            </div>
+          ) : null}
+        </aside>
+
+        <article className="academic-article" ref={pageRef}>
+          <div className="academic-article-header">
+            <div className="content-meta-row">
+              <span className="pill">{concept.type}</span>
+              <span className="pill alt">{concept.author.name}</span>
+            </div>
+            <h2>{concept.title}</h2>
+            <p>
+              Read this concept as a study page: the formal content first, then the associated
+              counterexamples, and finally the references that connect it into the larger knowledge graph.
+            </p>
+          </div>
+
+          <section className="academic-section" id="concept-statement">
+            <h3>Statement</h3>
+            <MarkdownContent content={concept.content} />
+          </section>
+
+          <section className="academic-section" id="concept-counterexamples">
+            <h3>Related Counterexamples</h3>
+            {concept.relatedCounters && concept.relatedCounters.length > 0 ? (
+              <div className="academic-reference-list">
+                {concept.relatedCounters.map((item) => (
+                  <Link className="academic-reference-item" key={item.id} to={`/counterexamples/${item.slug}`}>
+                    <span>COUNTEREXAMPLE</span>
+                    <strong>{item.title}</strong>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <p className="academic-empty-text">No related counterexamples are attached to this concept yet.</p>
+            )}
+          </section>
+
+          <section className="academic-section" id="concept-internal-links">
+            <h3>Internal References</h3>
+            {concept.linkedItems.length > 0 ? (
+              <div className="academic-reference-list">
+                {concept.linkedItems.map((item) =>
+                  item.href ? (
+                    <Link className="academic-reference-item" key={`${item.kind}-${item.title}`} to={item.href}>
+                      <span>{item.label}</span>
+                      <strong>{item.title}</strong>
+                    </Link>
+                  ) : (
+                    <div className="academic-reference-item unresolved" key={`${item.kind}-${item.title}`}>
+                      <span>{item.label}</span>
+                      <strong>{item.title}</strong>
+                    </div>
+                  ),
+                )}
+              </div>
+            ) : (
+              <p className="academic-empty-text">No internal references were detected in this concept.</p>
+            )}
+          </section>
+
+          <section className="academic-section" id="concept-metadata">
+            <h3>Metadata</h3>
+            <div className="academic-metadata-grid">
+              <div>
+                <span>Author</span>
+                <strong>{concept.author.name}</strong>
+              </div>
+              <div>
+                <span>Created</span>
+                <strong>{formatDateTime(concept.createdAt)}</strong>
+              </div>
+              <div>
+                <span>Updated</span>
+                <strong>{formatDateTime(concept.updatedAt)}</strong>
+              </div>
+              <div>
+                <span>Linked Counterexamples</span>
+                <strong>{concept.relatedCounters?.length ?? 0}</strong>
+              </div>
             </div>
           </section>
-        ) : null}
-      </article>
+        </article>
+      </div>
     </div>
   );
 }

@@ -7,7 +7,7 @@ export function NotFoundPage() {
         <div className="eyebrow">Not Found</div>
         <h2>This page does not exist in the atlas yet.</h2>
         <Link className="primary-button" to="/">
-          Return to Dashboard
+          Return Home
         </Link>
       </article>
     </div>

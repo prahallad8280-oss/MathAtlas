@@ -24,17 +24,17 @@ enum ConceptType {
 }
 
 model User {
-  id           String           @id @default(cuid())
-  name         String
-  email        String           @unique
-  passwordHash String
-  role         Role
-  questions    Question[]
-  concepts     Concept[]
+  id              String           @id @default(cuid())
+  name            String
+  email           String           @unique
+  passwordHash    String
+  role            Role
+  questions       Question[]
+  concepts        Concept[]
   counterexamples Counterexample[]
-  solutions    Solution[]
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @updatedAt
+  solutions       Solution[]
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
 }
 
 model Subject {
@@ -98,4 +98,11 @@ model Counterexample {
   relatedConcepts Concept[] @relation("CounterexampleConcepts")
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
+}
+
+model SiteMetric {
+  key       String   @id
+  value     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

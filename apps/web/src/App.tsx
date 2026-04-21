@@ -1,10 +1,14 @@
 import { lazy, Suspense } from "react";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
-import { AppShell } from "./components/AppShell";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { AdminShell } from "./components/AdminShell";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import { PublicShell } from "./components/PublicShell";
 import { AuthProvider } from "./lib/auth";
 import { KnowledgeProvider } from "./lib/knowledge";
 
+const AdminHomePage = lazy(() =>
+  import("./pages/AdminHomePage").then((module) => ({ default: module.AdminHomePage })),
+);
 const HomePage = lazy(() => import("./pages/HomePage").then((module) => ({ default: module.HomePage })));
 const QuestionsPage = lazy(() =>
   import("./pages/QuestionsPage").then((module) => ({ default: module.QuestionsPage })),
@@ -44,7 +48,21 @@ export default function App() {
         <BrowserRouter>
           <Suspense fallback={<div className="empty-state">Loading page...</div>}>
             <Routes>
-              <Route element={<AppShell />}>
+              <Route path="/admin/login" element={<LoginPage />} />
+              <Route
+                path="/admin"
+                element={
+                  <ProtectedRoute>
+                    <AdminShell />
+                  </ProtectedRoute>
+                }
+              >
+                <Route index element={<AdminHomePage />} />
+                <Route path="content" element={<StudioPage />} />
+                <Route path="*" element={<NotFoundPage />} />
+              </Route>
+
+              <Route element={<PublicShell />}>
                 <Route path="/" element={<HomePage />} />
                 <Route path="/questions" element={<QuestionsPage />} />
                 <Route path="/questions/:slug" element={<QuestionDetailPage />} />
@@ -55,15 +73,8 @@ export default function App() {
                 <Route path="/counterexamples" element={<CounterexamplesPage />} />
                 <Route path="/counterexamples/:slug" element={<CounterexampleDetailPage />} />
                 <Route path="/search" element={<SearchPage />} />
-                <Route path="/login" element={<LoginPage />} />
-                <Route
-                  path="/studio"
-                  element={
-                    <ProtectedRoute>
-                      <StudioPage />
-                    </ProtectedRoute>
-                  }
-                />
+                <Route path="/login" element={<Navigate to="/admin/login" replace />} />
+                <Route path="/studio" element={<Navigate to="/admin/content" replace />} />
                 <Route path="*" element={<NotFoundPage />} />
               </Route>
             </Routes>

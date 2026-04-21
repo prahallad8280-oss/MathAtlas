@@ -13,6 +13,7 @@ const slugify = (value: string) =>
     .slice(0, 80);
 
 async function main() {
+  await prisma.siteMetric.deleteMany();
   await prisma.solution.deleteMany();
   await prisma.question.deleteMany();
   await prisma.counterexample.deleteMany();
@@ -167,6 +168,13 @@ async function main() {
           authorId: admin.id,
         },
       },
+    },
+  });
+
+  await prisma.siteMetric.create({
+    data: {
+      key: "public-visitor-views",
+      value: 0,
     },
   });
 

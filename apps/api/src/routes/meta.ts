@@ -2,6 +2,7 @@ import { Router } from "express";
 import { prisma } from "../lib/prisma.js";
 
 const router = Router();
+const VISITOR_VIEW_KEY = "public-visitor-views";
 
 router.get("/dashboard", async (_req, res) => {
   const [questionCount, conceptCount, counterexampleCount, recentQuestions, recentConcepts, recentCounterexamples] =
@@ -89,6 +90,35 @@ router.get("/knowledge-index", async (_req, res) => {
       href: `/counterexamples/${item.slug}`,
       type: "COUNTEREXAMPLE",
     })),
+  });
+});
+
+router.get("/site-stats", async (_req, res) => {
+  const visitorMetric = await prisma.siteMetric.findUnique({
+    where: { key: VISITOR_VIEW_KEY },
+  });
+
+  return res.json({
+    visitorViewCount: visitorMetric?.value ?? 0,
+  });
+});
+
+router.post("/visitor-view", async (_req, res) => {
+  const metric = await prisma.siteMetric.upsert({
+    where: { key: VISITOR_VIEW_KEY },
+    update: {
+      value: {
+        increment: 1,
+      },
+    },
+    create: {
+      key: VISITOR_VIEW_KEY,
+      value: 1,
+    },
+  });
+
+  return res.status(201).json({
+    visitorViewCount: metric.value,
   });
 });
 

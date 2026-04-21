@@ -10,6 +10,10 @@ export type User = {
   createdAt?: string;
 };
 
+export type SiteStats = {
+  visitorViewCount: number;
+};
+
 export type Subject = {
   id: string;
   name: string;

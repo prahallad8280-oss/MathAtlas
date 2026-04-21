@@ -7,6 +7,12 @@ import type { Concept, ConceptType, Counterexample, ExamSession, Question } from
 
 type TabKey = "questions" | "concepts" | "counterexamples";
 
+const tabLabels: Record<TabKey, string> = {
+  questions: "Questions",
+  concepts: "Concepts",
+  counterexamples: "Counterexamples",
+};
+
 const emptyQuestionForm = {
   questionText: "",
   year: `${new Date().getFullYear()}`,
@@ -194,7 +200,7 @@ export function StudioPage() {
             className={tab === item ? "tab-button active" : "tab-button"}
             onClick={() => setTab(item)}
           >
-            {item}
+            {tabLabels[item]}
           </button>
         ))}
       </div>
