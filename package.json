@@ -1,0 +1,23 @@
+{
+  "name": "mathatlas-platform",
+  "private": true,
+  "version": "1.0.0",
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev --workspace @mathatlas/api\" \"npm run dev --workspace @mathatlas/web\"",
+    "dev:api": "npm run dev --workspace @mathatlas/api",
+    "dev:web": "npm run dev --workspace @mathatlas/web",
+    "db:up": "docker compose up -d db",
+    "db:down": "docker compose down",
+    "db:logs": "docker compose logs -f db",
+    "build": "npm run build --workspace @mathatlas/api && npm run build --workspace @mathatlas/web",
+    "prisma:generate": "npm run prisma:generate --workspace @mathatlas/api",
+    "prisma:migrate": "npm run prisma:migrate --workspace @mathatlas/api",
+    "prisma:seed": "npm run prisma:seed --workspace @mathatlas/api"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

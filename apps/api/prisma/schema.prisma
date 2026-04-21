@@ -1,0 +1,101 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  AUTHOR
+}
+
+enum ExamSession {
+  JUNE
+  DECEMBER
+}
+
+enum ConceptType {
+  THEOREM
+  DEFINITION
+  RESULT
+}
+
+model User {
+  id           String           @id @default(cuid())
+  name         String
+  email        String           @unique
+  passwordHash String
+  role         Role
+  questions    Question[]
+  concepts     Concept[]
+  counterexamples Counterexample[]
+  solutions    Solution[]
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+}
+
+model Subject {
+  id        String     @id @default(cuid())
+  name      String     @unique
+  slug      String     @unique
+  questions Question[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model Question {
+  id           String      @id @default(cuid())
+  slug         String      @unique
+  questionText String
+  year         Int
+  session      ExamSession
+  subjectId    String
+  subject      Subject     @relation(fields: [subjectId], references: [id], onDelete: Restrict)
+  authorId     String
+  author       User        @relation(fields: [authorId], references: [id], onDelete: Restrict)
+  solution     Solution?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@index([year, session])
+  @@index([subjectId])
+}
+
+model Solution {
+  id        String    @id @default(cuid())
+  content   String
+  questionId String   @unique
+  question  Question  @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User      @relation(fields: [authorId], references: [id], onDelete: Restrict)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Concept {
+  id              String           @id @default(cuid())
+  title           String           @unique
+  slug            String           @unique
+  content         String
+  type            ConceptType
+  authorId        String
+  author          User             @relation(fields: [authorId], references: [id], onDelete: Restrict)
+  relatedCounters Counterexample[] @relation("CounterexampleConcepts")
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+}
+
+model Counterexample {
+  id              String    @id @default(cuid())
+  title           String    @unique
+  slug            String    @unique
+  explanation     String
+  authorId        String
+  author          User      @relation(fields: [authorId], references: [id], onDelete: Restrict)
+  relatedConcepts Concept[] @relation("CounterexampleConcepts")
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
