@@ -2,6 +2,7 @@ import { Router } from "express";
 import bcrypt from "bcryptjs";
 import { Role } from "@prisma/client";
 import { z } from "zod";
+import { asyncHandler } from "../lib/asyncHandler.js";
 import { prisma } from "../lib/prisma.js";
 import { createToken, requireAuth } from "../middleware/auth.js";
 
@@ -42,7 +43,7 @@ function authResponse(user: { id: string; name: string; email: string; role: Rol
   };
 }
 
-router.post("/register", async (req, res) => {
+router.post("/register", asyncHandler(async (req, res) => {
   const parsed = registerSchema.safeParse(req.body);
 
   if (!parsed.success) {
@@ -58,20 +59,21 @@ router.post("/register", async (req, res) => {
   }
 
   const passwordHash = await bcrypt.hash(parsed.data.password, 10);
+  const userCount = await prisma.user.count();
 
   const user = await prisma.user.create({
     data: {
       name: parsed.data.name,
       email: parsed.data.email,
       passwordHash,
-      role: Role.AUTHOR,
+      role: userCount === 0 ? Role.ADMIN : Role.AUTHOR,
     },
   });
 
   return res.status(201).json(authResponse(user));
-});
+}));
 
-router.post("/login", async (req, res) => {
+router.post("/login", asyncHandler(async (req, res) => {
   const parsed = loginSchema.safeParse(req.body);
 
   if (!parsed.success) {
@@ -93,9 +95,9 @@ router.post("/login", async (req, res) => {
   }
 
   return res.json(authResponse(user));
-});
+}));
 
-router.get("/me", requireAuth, async (req, res) => {
+router.get("/me", requireAuth, asyncHandler(async (req, res) => {
   const user = await prisma.user.findUnique({
     where: { id: req.user!.id },
     select: {
@@ -108,6 +110,6 @@ router.get("/me", requireAuth, async (req, res) => {
   });
 
   return res.json(user);
-});
+}));
 
 export default router;

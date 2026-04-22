@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { ExamSession, Role } from "@prisma/client";
 import { z } from "zod";
+import { asyncHandler } from "../lib/asyncHandler.js";
 import { prisma } from "../lib/prisma.js";
 import { resolveKnowledgeLinks } from "../lib/content.js";
 import { slugify } from "../lib/slug.js";
@@ -57,7 +58,7 @@ const upsertSubject = async (subjectName: string) => {
   });
 };
 
-router.get("/", async (req, res) => {
+router.get("/", asyncHandler(async (req, res) => {
   const q = typeof req.query.q === "string" ? req.query.q.trim() : "";
   const subject = typeof req.query.subject === "string" ? req.query.subject.trim() : "";
   const year = typeof req.query.year === "string" ? Number.parseInt(req.query.year, 10) : undefined;
@@ -90,9 +91,9 @@ router.get("/", async (req, res) => {
   });
 
   return res.json(questions);
-});
+}));
 
-router.get("/:slug", async (req, res) => {
+router.get("/:slug", asyncHandler(async (req, res) => {
   const slug = String(req.params.slug);
   const question = await prisma.question.findUnique({
     where: { slug },
@@ -120,9 +121,9 @@ router.get("/:slug", async (req, res) => {
     ...question,
     linkedItems,
   });
-});
+}));
 
-router.post("/", requireAuth, requireRole(Role.ADMIN, Role.AUTHOR), async (req, res) => {
+router.post("/", requireAuth, requireRole(Role.ADMIN, Role.AUTHOR), asyncHandler(async (req, res) => {
   const parsed = questionSchema.safeParse(req.body);
 
   if (!parsed.success) {
@@ -161,9 +162,9 @@ router.post("/", requireAuth, requireRole(Role.ADMIN, Role.AUTHOR), async (req, 
   });
 
   return res.status(201).json(question);
-});
+}));
 
-router.put("/:id", requireAuth, requireRole(Role.ADMIN, Role.AUTHOR), async (req, res) => {
+router.put("/:id", requireAuth, requireRole(Role.ADMIN, Role.AUTHOR), asyncHandler(async (req, res) => {
   const questionId = String(req.params.id);
   const parsed = questionSchema.safeParse(req.body);
 
@@ -223,9 +224,9 @@ router.put("/:id", requireAuth, requireRole(Role.ADMIN, Role.AUTHOR), async (req
   });
 
   return res.json(question);
-});
+}));
 
-router.delete("/:id", requireAuth, requireRole(Role.ADMIN, Role.AUTHOR), async (req, res) => {
+router.delete("/:id", requireAuth, requireRole(Role.ADMIN, Role.AUTHOR), asyncHandler(async (req, res) => {
   const questionId = String(req.params.id);
   const existing = await prisma.question.findUnique({
     where: { id: questionId },
@@ -245,6 +246,6 @@ router.delete("/:id", requireAuth, requireRole(Role.ADMIN, Role.AUTHOR), async (
   });
 
   return res.status(204).send();
-});
+}));
 
 export default router;

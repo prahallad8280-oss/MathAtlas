@@ -2,6 +2,7 @@ import { Router } from "express";
 import { ConceptType, Role } from "@prisma/client";
 import { z } from "zod";
 import { assertKnowledgeTitleAvailable, resolveKnowledgeLinks } from "../lib/content.js";
+import { asyncHandler } from "../lib/asyncHandler.js";
 import { prisma } from "../lib/prisma.js";
 import { slugify } from "../lib/slug.js";
 import { ensureOwnershipOrAdmin, requireAuth, requireRole } from "../middleware/auth.js";
@@ -36,7 +37,7 @@ const ensureUniqueSlug = async (slug: string, excludeId?: string) => {
   }
 };
 
-router.get("/", async (req, res) => {
+router.get("/", asyncHandler(async (req, res) => {
   const q = typeof req.query.q === "string" ? req.query.q.trim() : "";
   const type =
     req.query.type === "THEOREM" || req.query.type === "DEFINITION" || req.query.type === "RESULT"
@@ -68,9 +69,9 @@ router.get("/", async (req, res) => {
   });
 
   return res.json(concepts);
-});
+}));
 
-router.get("/:slug", async (req, res) => {
+router.get("/:slug", asyncHandler(async (req, res) => {
   const slug = String(req.params.slug);
   const concept = await prisma.concept.findUnique({
     where: { slug },
@@ -96,9 +97,9 @@ router.get("/:slug", async (req, res) => {
     ...concept,
     linkedItems,
   });
-});
+}));
 
-router.post("/", requireAuth, requireRole(Role.ADMIN, Role.AUTHOR), async (req, res) => {
+router.post("/", requireAuth, requireRole(Role.ADMIN, Role.AUTHOR), asyncHandler(async (req, res) => {
   const parsed = conceptSchema.safeParse(req.body);
 
   if (!parsed.success) {
@@ -122,9 +123,9 @@ router.post("/", requireAuth, requireRole(Role.ADMIN, Role.AUTHOR), async (req, 
   });
 
   return res.status(201).json(concept);
-});
+}));
 
-router.put("/:id", requireAuth, requireRole(Role.ADMIN, Role.AUTHOR), async (req, res) => {
+router.put("/:id", requireAuth, requireRole(Role.ADMIN, Role.AUTHOR), asyncHandler(async (req, res) => {
   const conceptId = String(req.params.id);
   const parsed = conceptSchema.safeParse(req.body);
 
@@ -161,9 +162,9 @@ router.put("/:id", requireAuth, requireRole(Role.ADMIN, Role.AUTHOR), async (req
   });
 
   return res.json(concept);
-});
+}));
 
-router.delete("/:id", requireAuth, requireRole(Role.ADMIN, Role.AUTHOR), async (req, res) => {
+router.delete("/:id", requireAuth, requireRole(Role.ADMIN, Role.AUTHOR), asyncHandler(async (req, res) => {
   const conceptId = String(req.params.id);
   const existing = await prisma.concept.findUnique({
     where: { id: conceptId },
@@ -182,6 +183,6 @@ router.delete("/:id", requireAuth, requireRole(Role.ADMIN, Role.AUTHOR), async (
   });
 
   return res.status(204).send();
-});
+}));
 
 export default router;

@@ -8,6 +8,7 @@ import metaRoutes from "./routes/meta.js";
 import questionRoutes from "./routes/questions.js";
 import searchRoutes from "./routes/search.js";
 import { config } from "./config.js";
+import { prisma } from "./lib/prisma.js";
 
 export const app = express();
 
@@ -46,6 +47,18 @@ app.get("/api/health", (_req, res) => {
   res.json({ status: "ok" });
 });
 
+app.get("/api/health/db", async (_req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.json({ status: "ok" });
+  } catch {
+    res.status(503).json({
+      status: "error",
+      message: "Database is not reachable from the API service.",
+    });
+  }
+});
+
 app.use("/api/auth", authRoutes);
 app.use("/api/meta", metaRoutes);
 app.use("/api/questions", questionRoutes);
@@ -57,7 +70,14 @@ app.use((_req, res) => {
   res.status(404).json({ message: "Route not found." });
 });
 
-app.use((error: Error, _req: Request, res: Response, _next: NextFunction) => {
+app.use((error: Error & { code?: string }, _req: Request, res: Response, _next: NextFunction) => {
   console.error(error);
+
+  if (error.name.startsWith("Prisma") || error.code?.startsWith("P")) {
+    return res.status(503).json({
+      message: "Database is temporarily unavailable. Check DATABASE_URL and run Prisma db push.",
+    });
+  }
+
   res.status(500).json({ message: error.message || "Internal server error." });
 });

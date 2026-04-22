@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { asyncHandler } from "../lib/asyncHandler.js";
 import { prisma } from "../lib/prisma.js";
 
 const router = Router();
@@ -16,7 +17,7 @@ const createExcerpt = (content: string, query: string) => {
   return normalized.slice(start, end);
 };
 
-router.get("/", async (req, res) => {
+router.get("/", asyncHandler(async (req, res) => {
   const q = typeof req.query.q === "string" ? req.query.q.trim() : "";
 
   if (!q) {
@@ -83,6 +84,6 @@ router.get("/", async (req, res) => {
       })),
     ],
   });
-});
+}));
 
 export default router;

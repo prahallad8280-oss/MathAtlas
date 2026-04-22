@@ -2,6 +2,7 @@ import { Router } from "express";
 import { Role } from "@prisma/client";
 import { z } from "zod";
 import { assertKnowledgeTitleAvailable, resolveKnowledgeLinks } from "../lib/content.js";
+import { asyncHandler } from "../lib/asyncHandler.js";
 import { prisma } from "../lib/prisma.js";
 import { slugify } from "../lib/slug.js";
 import { ensureOwnershipOrAdmin, requireAuth, requireRole } from "../middleware/auth.js";
@@ -36,7 +37,7 @@ const ensureUniqueSlug = async (slug: string, excludeId?: string) => {
   }
 };
 
-router.get("/", async (req, res) => {
+router.get("/", asyncHandler(async (req, res) => {
   const q = typeof req.query.q === "string" ? req.query.q.trim() : "";
 
   const counterexamples = await prisma.counterexample.findMany({
@@ -64,9 +65,9 @@ router.get("/", async (req, res) => {
   });
 
   return res.json(counterexamples);
-});
+}));
 
-router.get("/:slug", async (req, res) => {
+router.get("/:slug", asyncHandler(async (req, res) => {
   const slug = String(req.params.slug);
   const counterexample = await prisma.counterexample.findUnique({
     where: { slug },
@@ -93,9 +94,9 @@ router.get("/:slug", async (req, res) => {
     ...counterexample,
     linkedItems,
   });
-});
+}));
 
-router.post("/", requireAuth, requireRole(Role.ADMIN, Role.AUTHOR), async (req, res) => {
+router.post("/", requireAuth, requireRole(Role.ADMIN, Role.AUTHOR), asyncHandler(async (req, res) => {
   const parsed = counterexampleSchema.safeParse(req.body);
 
   if (!parsed.success) {
@@ -128,9 +129,9 @@ router.post("/", requireAuth, requireRole(Role.ADMIN, Role.AUTHOR), async (req, 
   });
 
   return res.status(201).json(counterexample);
-});
+}));
 
-router.put("/:id", requireAuth, requireRole(Role.ADMIN, Role.AUTHOR), async (req, res) => {
+router.put("/:id", requireAuth, requireRole(Role.ADMIN, Role.AUTHOR), asyncHandler(async (req, res) => {
   const counterexampleId = String(req.params.id);
   const parsed = counterexampleSchema.safeParse(req.body);
 
@@ -178,9 +179,9 @@ router.put("/:id", requireAuth, requireRole(Role.ADMIN, Role.AUTHOR), async (req
   });
 
   return res.json(counterexample);
-});
+}));
 
-router.delete("/:id", requireAuth, requireRole(Role.ADMIN, Role.AUTHOR), async (req, res) => {
+router.delete("/:id", requireAuth, requireRole(Role.ADMIN, Role.AUTHOR), asyncHandler(async (req, res) => {
   const counterexampleId = String(req.params.id);
   const existing = await prisma.counterexample.findUnique({
     where: { id: counterexampleId },
@@ -199,6 +200,6 @@ router.delete("/:id", requireAuth, requireRole(Role.ADMIN, Role.AUTHOR), async (
   });
 
   return res.status(204).send();
-});
+}));
 
 export default router;

@@ -14,8 +14,8 @@ type AuthModalProps = {
 export function AuthModal({ mode, next, onClose, onModeChange }: AuthModalProps) {
   const navigate = useNavigate();
   const { login, register, isAuthenticated } = useAuth();
-  const [loginEmail, setLoginEmail] = useState("admin@mathatlas.dev");
-  const [loginPassword, setLoginPassword] = useState("Admin@123");
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
   const [name, setName] = useState("");
   const [registerEmail, setRegisterEmail] = useState("");
   const [registerPassword, setRegisterPassword] = useState("");
@@ -72,7 +72,7 @@ export function AuthModal({ mode, next, onClose, onModeChange }: AuthModalProps)
     <div aria-modal="true" className="auth-modal-backdrop" onClick={onClose} role="dialog">
       <div className="auth-modal-card" onClick={(event) => event.stopPropagation()}>
         <button aria-label="Close login popup" className="auth-modal-close" onClick={onClose} type="button">
-          ×
+          x
         </button>
 
         <div className="auth-modal-header">
@@ -105,11 +105,21 @@ export function AuthModal({ mode, next, onClose, onModeChange }: AuthModalProps)
           <form className="stack-form" onSubmit={handleLogin}>
             <label>
               Email
-              <input value={loginEmail} onChange={(event) => setLoginEmail(event.target.value)} type="email" />
+              <input
+                autoComplete="email"
+                placeholder="admin@mathatlas.dev"
+                required
+                value={loginEmail}
+                onChange={(event) => setLoginEmail(event.target.value)}
+                type="email"
+              />
             </label>
             <label>
               Password
               <input
+                autoComplete="current-password"
+                placeholder="Enter your password"
+                required
                 value={loginPassword}
                 onChange={(event) => setLoginPassword(event.target.value)}
                 type="password"
@@ -128,15 +138,32 @@ export function AuthModal({ mode, next, onClose, onModeChange }: AuthModalProps)
           <form className="stack-form" onSubmit={handleRegister}>
             <label>
               Full Name
-              <input value={name} onChange={(event) => setName(event.target.value)} type="text" />
+              <input
+                autoComplete="name"
+                placeholder="Your full name"
+                required
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                type="text"
+              />
             </label>
             <label>
               Email
-              <input value={registerEmail} onChange={(event) => setRegisterEmail(event.target.value)} type="email" />
+              <input
+                autoComplete="email"
+                placeholder="you@example.com"
+                required
+                value={registerEmail}
+                onChange={(event) => setRegisterEmail(event.target.value)}
+                type="email"
+              />
             </label>
             <label>
               Password
               <input
+                autoComplete="new-password"
+                placeholder="At least 6 characters"
+                required
                 value={registerPassword}
                 onChange={(event) => setRegisterPassword(event.target.value)}
                 type="password"
@@ -145,6 +172,9 @@ export function AuthModal({ mode, next, onClose, onModeChange }: AuthModalProps)
             <label>
               Confirm Password
               <input
+                autoComplete="new-password"
+                placeholder="Repeat password"
+                required
                 value={confirmPassword}
                 onChange={(event) => setConfirmPassword(event.target.value)}
                 type="password"
@@ -164,10 +194,10 @@ export function AuthModal({ mode, next, onClose, onModeChange }: AuthModalProps)
         {error ? <div className="error-banner">{error}</div> : null}
 
         <div className="demo-credentials">
-          <strong>Demo credentials</strong>
-          <span>Admin: admin@mathatlas.dev / Admin@123</span>
-          <span>Author: author@mathatlas.dev / Author@123</span>
-          <span>New signups create an AUTHOR account by default.</span>
+          <strong>Access note</strong>
+          <span>If the database is empty, the first created ID becomes ADMIN.</span>
+          <span>After that, new signups become AUTHOR accounts.</span>
+          <span>Seeded demo IDs still work after running the Prisma seed command.</span>
         </div>
       </div>
     </div>
