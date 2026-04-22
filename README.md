@@ -54,40 +54,6 @@ npm run prisma:generate
 
 ## Database Setup
 
-### Option A: Start PostgreSQL with Docker Compose
-
-If you have Docker Desktop installed, start the database with:
-
-```bash
-npm run db:up
-```
-
-This uses [docker-compose.yml](/D:/MathAtlas/docker-compose.yml) and starts PostgreSQL on `localhost:5432` with:
-
-- user: `postgres`
-- password: `postgres`
-- database: `mathatlas`
-
-Your `apps/api/.env` should match:
-
-```env
-DATABASE_URL="postgresql://postgres:postgres@localhost:5432/mathatlas"
-```
-
-You can inspect logs with:
-
-```bash
-npm run db:logs
-```
-
-Stop it with:
-
-```bash
-npm run db:down
-```
-
-### Option B: Use Your Existing PostgreSQL
-
 Make sure PostgreSQL is running and `DATABASE_URL` points to a valid database, then run:
 
 ```bash
@@ -105,7 +71,6 @@ Seeded demo users:
 Recommended full local startup flow:
 
 ```bash
-npm run db:up
 npm run prisma:migrate
 npm run prisma:seed
 npm run dev

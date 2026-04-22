@@ -186,9 +186,10 @@ function formatShortDate(value: string) {
 }
 
 export function HomePage() {
-  const [data, setData] = useState<DashboardPayload | null>(null);
-  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [data, setData] = useState<DashboardPayload>(fallbackDashboard);
+  const [subjects, setSubjects] = useState<Subject[]>(fallbackSubjects);
   const [isUsingFallback, setIsUsingFallback] = useState(false);
+  const [isLoadingLiveContent, setIsLoadingLiveContent] = useState(true);
 
   useEffect(() => {
     async function loadHomeData() {
@@ -200,20 +201,19 @@ export function HomePage() {
 
         setData(dashboardPayload);
         setSubjects(subjectsPayload);
+        setIsUsingFallback(false);
       } catch (loadError) {
         console.warn("Using fallback home content", loadError);
         setData(fallbackDashboard);
         setSubjects(fallbackSubjects);
         setIsUsingFallback(true);
+      } finally {
+        setIsLoadingLiveContent(false);
       }
     }
 
     void loadHomeData();
   }, []);
-
-  if (!data) {
-    return <div className="empty-state">Loading the mathematical atlas...</div>;
-  }
 
   const featuredSubjects = (subjects.length > 0 ? subjects : fallbackSubjects)
     .sort((left, right) => (right._count?.questions ?? 0) - (left._count?.questions ?? 0))
@@ -321,7 +321,7 @@ export function HomePage() {
         </div>
       </section>
 
-      {isUsingFallback ? (
+      {isUsingFallback && !isLoadingLiveContent ? (
         <div className="home-fallback-note">
           Live database content is warming up. Showing a preview layout while MathAtlas reconnects.
         </div>

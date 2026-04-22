@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { apiRequest } from "../lib/api";
 import { useAuth } from "../lib/auth";
@@ -89,7 +89,9 @@ export function AdminShell() {
         </header>
 
         <main className="admin-main-content">
-          <Outlet />
+          <Suspense fallback={<div className="empty-state">Loading page...</div>}>
+            <Outlet />
+          </Suspense>
         </main>
 
         <footer className="admin-footer">

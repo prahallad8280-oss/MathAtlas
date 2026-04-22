@@ -16,6 +16,46 @@ const navigation = [
   { label: "Search", to: "/search" },
 ];
 
+function PublicMainFallback() {
+  return (
+    <div className="page-stack shell-loading-home" aria-hidden="true">
+      <section className="shell-loading-hero">
+        <span className="shell-loading-badge" />
+        <span className="shell-loading-title" />
+        <span className="shell-loading-line wide" />
+        <span className="shell-loading-line medium" />
+        <div className="shell-loading-actions">
+          <span className="shell-loading-button" />
+          <span className="shell-loading-button ghost" />
+        </div>
+      </section>
+
+      <section className="shell-loading-stats">
+        {Array.from({ length: 4 }, (_, index) => (
+          <div className="shell-loading-stat-card" key={index}>
+            <span className="shell-loading-icon" />
+            <div className="shell-loading-copy">
+              <span className="shell-loading-line short" />
+              <span className="shell-loading-line tiny" />
+            </div>
+          </div>
+        ))}
+      </section>
+
+      <section className="shell-loading-columns">
+        {Array.from({ length: 3 }, (_, index) => (
+          <article className="shell-loading-panel" key={index}>
+            <span className="shell-loading-line short" />
+            <span className="shell-loading-line wide" />
+            <span className="shell-loading-line medium" />
+            <span className="shell-loading-line medium" />
+          </article>
+        ))}
+      </section>
+    </div>
+  );
+}
+
 export function PublicShell() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -117,7 +157,9 @@ export function PublicShell() {
       </header>
 
       <main className="public-main">
-        <Outlet />
+        <Suspense fallback={<PublicMainFallback />}>
+          <Outlet />
+        </Suspense>
       </main>
 
       <footer className="public-footer">
