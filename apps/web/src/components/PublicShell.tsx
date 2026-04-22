@@ -1,5 +1,5 @@
 import { FormEvent, Suspense, lazy, useEffect, useState } from "react";
-import { NavLink, Outlet, useNavigate, useSearchParams } from "react-router-dom";
+import { NavLink, Outlet, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { apiRequest } from "../lib/api";
 import { HomeSectionShell } from "./LoadingShell";
 
@@ -18,11 +18,13 @@ const navigation = [
 ];
 
 export function PublicShell() {
+  const location = useLocation();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState("");
   const authMode = searchParams.get("auth");
   const next = searchParams.get("next");
+  const hideHeader = location.pathname === "/counterexamples";
 
   useEffect(() => {
     const sessionKey = "mathatlas-visitor-view-recorded";
@@ -70,50 +72,52 @@ export function PublicShell() {
 
   return (
     <div className="public-shell">
-      <header className="public-header">
-        <div className="public-header-row">
-          <div className="public-brand-block">
-            <NavLink className="public-brand-link" to="/">
-              <img className="public-brand-logo" src="/mathatlas-logo.png" alt="MathAtlas logo" />
-              <div className="public-brand-copy">
-                <span className="public-brand-title">MathAtlas</span>
-              </div>
-            </NavLink>
+      {hideHeader ? null : (
+        <header className="public-header">
+          <div className="public-header-row">
+            <div className="public-brand-block">
+              <NavLink className="public-brand-link" to="/">
+                <img className="public-brand-logo" src="/mathatlas-logo.png" alt="MathAtlas logo" />
+                <div className="public-brand-copy">
+                  <span className="public-brand-title">MathAtlas</span>
+                </div>
+              </NavLink>
+            </div>
+
+            <div className="public-tools">
+              <form className="public-search-form" onSubmit={handleSubmit}>
+                <button className="public-search-icon" type="submit" aria-label="Search">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path
+                      d="M10.5 4.5a6 6 0 1 0 0 12a6 6 0 0 0 0-12Zm0-1.5a7.5 7.5 0 1 1 4.72 13.33l4.72 4.72a.75.75 0 1 1-1.06 1.06l-4.72-4.72A7.5 7.5 0 0 1 10.5 3Z"
+                      fill="currentColor"
+                    />
+                  </svg>
+                </button>
+                <input
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  placeholder="Search"
+                  aria-label="Search MathAtlas"
+                />
+              </form>
+            </div>
           </div>
 
-          <div className="public-tools">
-            <form className="public-search-form" onSubmit={handleSubmit}>
-              <button className="public-search-icon" type="submit" aria-label="Search">
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path
-                    d="M10.5 4.5a6 6 0 1 0 0 12a6 6 0 0 0 0-12Zm0-1.5a7.5 7.5 0 1 1 4.72 13.33l4.72 4.72a.75.75 0 1 1-1.06 1.06l-4.72-4.72A7.5 7.5 0 0 1 10.5 3Z"
-                    fill="currentColor"
-                  />
-                </svg>
-              </button>
-              <input
-                value={searchQuery}
-                onChange={(event) => setSearchQuery(event.target.value)}
-                placeholder="Search"
-                aria-label="Search MathAtlas"
-              />
-            </form>
-          </div>
-        </div>
-
-        <nav className="public-nav">
-          {navigation.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.to === "/"}
-              className={({ isActive }) => (isActive ? "public-nav-link active" : "public-nav-link")}
-            >
-              {item.label}
-            </NavLink>
-          ))}
-        </nav>
-      </header>
+          <nav className="public-nav">
+            {navigation.map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.to === "/"}
+                className={({ isActive }) => (isActive ? "public-nav-link active" : "public-nav-link")}
+              >
+                {item.label}
+              </NavLink>
+            ))}
+          </nav>
+        </header>
+      )}
 
       <main className="public-main">
         <Suspense fallback={<HomeSectionShell />}>

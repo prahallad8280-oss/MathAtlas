@@ -18,6 +18,13 @@ export function CounterexamplesPage() {
   const [counterexamples, setCounterexamples] = useState<Counterexample[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isUsingFallback, setIsUsingFallback] = useState(false);
+  const [isLightMode, setIsLightMode] = useState(() => {
+    if (typeof window === "undefined") {
+      return false;
+    }
+
+    return window.localStorage.getItem("counterexample-mode") === "light";
+  });
 
   const q = searchParams.get("q") ?? "";
   const concept = searchParams.get("concept") ?? "";
@@ -46,6 +53,14 @@ export function CounterexamplesPage() {
 
     void loadCounterexamples();
   }, [q]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    window.localStorage.setItem("counterexample-mode", isLightMode ? "light" : "dark");
+  }, [isLightMode]);
 
   function updateFilter(name: string, value: string) {
     const next = new URLSearchParams(searchParams);
@@ -102,14 +117,11 @@ export function CounterexamplesPage() {
 
   return (
     <div className="page-stack">
-      <section className="counterexample-hub">
+      <section className={isLightMode ? "counterexample-hub counterexample-hub-light" : "counterexample-hub"}>
         <aside className="counterexample-rail">
           <div className="counterexample-rail-brand">
             <div className="section-label">Math Counterexamples</div>
             <h2>Exceptions to rules and intuition.</h2>
-            <p>
-              A public archive of failures, edge cases, and minimal hypotheses that keep theorems honest.
-            </p>
           </div>
 
           <div className="counterexample-search-box">
@@ -151,28 +163,47 @@ export function CounterexamplesPage() {
         <div className="counterexample-stage">
           <div className="counterexample-stage-topbar">
             <div className="counterexample-stage-links">
+              <Link to="/">Home</Link>
               <Link to="/concepts">Theory Index</Link>
               <Link to="/questions">Questions</Link>
-              <Link to="/search">Search</Link>
             </div>
             <div className="counterexample-stage-links">
-              <span>{filteredCounterexamples.length} entries</span>
+              <button
+                aria-label={isLightMode ? "Switch to dark mode" : "Switch to light mode"}
+                aria-pressed={isLightMode}
+                className={isLightMode ? "counterexample-mode-toggle is-light" : "counterexample-mode-toggle"}
+                onClick={() => setIsLightMode((current) => !current)}
+                type="button"
+              >
+                <span className="counterexample-mode-toggle-thumb">
+                  {isLightMode ? (
+                    <svg fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path
+                        d="M20 15.5A8.5 8.5 0 1 1 8.5 4a6.5 6.5 0 0 0 11.5 11.5Z"
+                        stroke="currentColor"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="1.8"
+                      />
+                    </svg>
+                  ) : (
+                    <svg fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <circle cx="12" cy="12" r="4.25" stroke="currentColor" strokeWidth="1.8" />
+                      <path
+                        d="M12 2.5v2.2M12 19.3v2.2M21.5 12h-2.2M4.7 12H2.5M18.72 5.28l-1.56 1.56M6.84 17.16l-1.56 1.56M18.72 18.72l-1.56-1.56M6.84 6.84 5.28 5.28"
+                        stroke="currentColor"
+                        strokeLinecap="round"
+                        strokeWidth="1.8"
+                      />
+                    </svg>
+                  )}
+                </span>
+              </button>
               {concept ? (
                 <button className="counterexample-clear-button" onClick={() => updateFilter("concept", "")} type="button">
                   Clear theme
                 </button>
               ) : null}
-            </div>
-          </div>
-
-          <div className="counterexample-stage-header">
-            <div>
-              <div className="eyebrow">Counterexample Atlas</div>
-              <h2>Counterexamples that sharpen mathematical reasoning.</h2>
-              <p>
-                Inspired by mathematical resource sites and textbook reading layouts, this page highlights
-                why one exception can reshape an entire statement.
-              </p>
             </div>
           </div>
 
