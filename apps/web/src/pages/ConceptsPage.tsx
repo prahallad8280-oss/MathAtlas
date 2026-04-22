@@ -3,11 +3,12 @@ import { Link, useSearchParams } from "react-router-dom";
 import { apiRequest } from "../lib/api";
 import { excerpt, formatDateTime } from "../lib/format";
 import type { Concept, ConceptType } from "../types";
+import { fallbackConcepts } from "../lib/fallbackData";
 
 export function ConceptsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [concepts, setConcepts] = useState<Concept[]>([]);
-  const [error, setError] = useState<string | null>(null);
+  const [isUsingFallback, setIsUsingFallback] = useState(false);
 
   const q = searchParams.get("q") ?? "";
   const type = searchParams.get("type") ?? "";
@@ -21,8 +22,20 @@ export function ConceptsPage() {
 
         const payload = await apiRequest<Concept[]>(`/concepts${params.toString() ? `?${params.toString()}` : ""}`);
         setConcepts(payload);
+        setIsUsingFallback(false);
       } catch (loadError) {
-        setError(loadError instanceof Error ? loadError.message : "Unable to load concepts.");
+        console.warn("Using fallback concepts", loadError);
+        setConcepts(
+          fallbackConcepts.filter((concept) => {
+            const matchesQuery = q
+              ? `${concept.title} ${concept.content} ${concept.author.name}`.toLowerCase().includes(q.toLowerCase())
+              : true;
+            const matchesType = type ? concept.type === type : true;
+
+            return matchesQuery && matchesType;
+          }),
+        );
+        setIsUsingFallback(true);
       }
     }
 
@@ -57,7 +70,9 @@ export function ConceptsPage() {
         </select>
       </section>
 
-      {error ? <div className="error-banner">{error}</div> : null}
+      {isUsingFallback ? (
+        <div className="home-fallback-note">Live API data is temporarily unavailable. Showing preview concepts.</div>
+      ) : null}
 
       <section className="card-grid">
         {concepts.map((concept) => (

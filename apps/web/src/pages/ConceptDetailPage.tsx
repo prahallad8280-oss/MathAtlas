@@ -5,11 +5,12 @@ import { MarkdownContent } from "../components/MarkdownContent";
 import { apiRequest } from "../lib/api";
 import { formatDateTime } from "../lib/format";
 import type { ConceptDetail } from "../types";
+import { fallbackConcepts, fallbackCounterexamples } from "../lib/fallbackData";
 
 export function ConceptDetailPage() {
   const { slug } = useParams();
   const [concept, setConcept] = useState<ConceptDetail | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [isUsingFallback, setIsUsingFallback] = useState(false);
   const pageRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -21,17 +22,21 @@ export function ConceptDetailPage() {
       try {
         const payload = await apiRequest<ConceptDetail>(`/concepts/${slug}`);
         setConcept(payload);
+        setIsUsingFallback(false);
       } catch (loadError) {
-        setError(loadError instanceof Error ? loadError.message : "Unable to load this concept.");
+        console.warn("Using fallback concept detail", loadError);
+        const fallbackConcept = fallbackConcepts.find((item) => item.slug === slug) ?? fallbackConcepts[0];
+        const relatedCounters = fallbackCounterexamples
+          .filter((item) => (item.relatedConcepts ?? []).some((conceptItem) => conceptItem.slug === fallbackConcept.slug))
+          .map((item) => ({ id: item.id, title: item.title, slug: item.slug }));
+
+        setConcept({ ...fallbackConcept, relatedCounters, linkedItems: [] });
+        setIsUsingFallback(true);
       }
     }
 
     void loadConcept();
   }, [slug]);
-
-  if (error) {
-    return <div className="error-banner">{error}</div>;
-  }
 
   if (!concept) {
     return <div className="empty-state">Loading concept page...</div>;
@@ -55,6 +60,10 @@ export function ConceptDetailPage() {
           <ExportPdfButton targetRef={pageRef} filename={concept.slug} />
         </div>
       </div>
+
+      {isUsingFallback ? (
+        <div className="home-fallback-note">Live API data is temporarily unavailable. Showing a preview concept.</div>
+      ) : null}
 
       <div className="academic-layout">
         <aside className="academic-sidebar">

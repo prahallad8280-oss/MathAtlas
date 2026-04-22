@@ -5,12 +5,13 @@ import { MarkdownContent } from "../components/MarkdownContent";
 import { apiRequest } from "../lib/api";
 import { formatDateTime } from "../lib/format";
 import type { QuestionDetail } from "../types";
+import { fallbackQuestions } from "../lib/fallbackData";
 
 export function QuestionDetailPage() {
   const { slug } = useParams();
   const [question, setQuestion] = useState<QuestionDetail | null>(null);
   const [showSolution, setShowSolution] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [isUsingFallback, setIsUsingFallback] = useState(false);
   const pageRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -22,17 +23,17 @@ export function QuestionDetailPage() {
       try {
         const payload = await apiRequest<QuestionDetail>(`/questions/${slug}`);
         setQuestion(payload);
+        setIsUsingFallback(false);
       } catch (loadError) {
-        setError(loadError instanceof Error ? loadError.message : "Unable to load the question.");
+        console.warn("Using fallback question detail", loadError);
+        const fallbackQuestion = fallbackQuestions.find((item) => item.slug === slug) ?? fallbackQuestions[0];
+        setQuestion({ ...fallbackQuestion, linkedItems: [] });
+        setIsUsingFallback(true);
       }
     }
 
     void loadQuestion();
   }, [slug]);
-
-  if (error) {
-    return <div className="error-banner">{error}</div>;
-  }
 
   if (!question) {
     return <div className="empty-state">Loading question page...</div>;
@@ -46,6 +47,10 @@ export function QuestionDetailPage() {
         </Link>
         <ExportPdfButton targetRef={pageRef} filename={question.slug} />
       </div>
+
+      {isUsingFallback ? (
+        <div className="home-fallback-note">Live API data is temporarily unavailable. Showing a preview question.</div>
+      ) : null}
 
       <article className="detail-card" ref={pageRef}>
         <div className="content-meta-row">

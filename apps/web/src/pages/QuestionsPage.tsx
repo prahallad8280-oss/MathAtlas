@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { apiRequest } from "../lib/api";
 import { QuestionCard } from "../components/QuestionCard";
 import type { ExamSession, Question, Subject } from "../types";
+import { fallbackQuestions, fallbackSubjects } from "../lib/fallbackData";
 
 type YearGroup = {
   year: number;
@@ -18,7 +19,7 @@ export function QuestionsPage() {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [years, setYears] = useState<YearGroup[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [isUsingFallback, setIsUsingFallback] = useState(false);
 
   const q = searchParams.get("q") ?? "";
   const subject = searchParams.get("subject") ?? "";
@@ -29,7 +30,7 @@ export function QuestionsPage() {
     async function loadQuestions() {
       try {
         setIsLoading(true);
-        setError(null);
+        setIsUsingFallback(false);
 
         const params = new URLSearchParams();
         if (q) params.set("q", q);
@@ -47,7 +48,30 @@ export function QuestionsPage() {
         setSubjects(subjectData);
         setYears(yearData);
       } catch (loadError) {
-        setError(loadError instanceof Error ? loadError.message : "Unable to load questions.");
+        console.warn("Using fallback questions", loadError);
+        const filteredFallbackQuestions = fallbackQuestions.filter((question) => {
+          const matchesQuery = q
+            ? `${question.questionText} ${question.solution?.content ?? ""} ${question.author.name}`
+                .toLowerCase()
+                .includes(q.toLowerCase())
+            : true;
+          const matchesSubject = subject ? question.subject.slug === subject : true;
+          const matchesYear = year ? String(question.year) === year : true;
+          const matchesSession = session ? question.session === session : true;
+
+          return matchesQuery && matchesSubject && matchesYear && matchesSession;
+        });
+
+        setQuestions(filteredFallbackQuestions);
+        setSubjects(fallbackSubjects);
+        setYears(
+          fallbackQuestions.map((question) => ({
+            year: question.year,
+            session: question.session,
+            _count: { _all: 1 },
+          })),
+        );
+        setIsUsingFallback(true);
       } finally {
         setIsLoading(false);
       }
@@ -108,7 +132,9 @@ export function QuestionsPage() {
         </select>
       </section>
 
-      {error ? <div className="error-banner">{error}</div> : null}
+      {isUsingFallback ? (
+        <div className="home-fallback-note">Live API data is temporarily unavailable. Showing preview questions.</div>
+      ) : null}
       {isLoading ? <div className="empty-state">Loading questions...</div> : null}
       {!isLoading && questions.length === 0 ? (
         <div className="empty-state">No questions matched the current filters.</div>

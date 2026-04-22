@@ -2,11 +2,12 @@ import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { apiRequest } from "../lib/api";
 import type { SearchResult } from "../types";
+import { fallbackSearchResults } from "../lib/fallbackData";
 
 export function SearchPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [results, setResults] = useState<SearchResult[]>([]);
-  const [error, setError] = useState<string | null>(null);
+  const [isUsingFallback, setIsUsingFallback] = useState(false);
 
   const q = searchParams.get("q") ?? "";
 
@@ -14,14 +15,22 @@ export function SearchPage() {
     async function loadResults() {
       if (!q) {
         setResults([]);
+        setIsUsingFallback(false);
         return;
       }
 
       try {
         const payload = await apiRequest<{ results: SearchResult[] }>(`/search?q=${encodeURIComponent(q)}`);
         setResults(payload.results);
+        setIsUsingFallback(false);
       } catch (loadError) {
-        setError(loadError instanceof Error ? loadError.message : "Unable to run search.");
+        console.warn("Using fallback search results", loadError);
+        setResults(
+          fallbackSearchResults.filter((result) =>
+            `${result.title} ${result.type} ${result.excerpt}`.toLowerCase().includes(q.toLowerCase()),
+          ),
+        );
+        setIsUsingFallback(true);
       }
     }
 
@@ -50,7 +59,9 @@ export function SearchPage() {
         />
       </section>
 
-      {error ? <div className="error-banner">{error}</div> : null}
+      {isUsingFallback ? (
+        <div className="home-fallback-note">Live API search is temporarily unavailable. Showing preview results.</div>
+      ) : null}
       {!q ? <div className="empty-state">Type into the search bar to begin exploring the atlas.</div> : null}
 
       <section className="stack-list">

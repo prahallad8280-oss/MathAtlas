@@ -2,27 +2,27 @@ import { useEffect, useState } from "react";
 import { apiRequest } from "../lib/api";
 import { QuestionCard } from "../components/QuestionCard";
 import type { Question } from "../types";
+import { fallbackQuestions } from "../lib/fallbackData";
 
 export function YearsPage() {
   const [questions, setQuestions] = useState<Question[]>([]);
-  const [error, setError] = useState<string | null>(null);
+  const [isUsingFallback, setIsUsingFallback] = useState(false);
 
   useEffect(() => {
     async function loadQuestions() {
       try {
         const payload = await apiRequest<Question[]>("/questions");
         setQuestions(payload);
+        setIsUsingFallback(false);
       } catch (loadError) {
-        setError(loadError instanceof Error ? loadError.message : "Unable to load year-wise groups.");
+        console.warn("Using fallback year groups", loadError);
+        setQuestions(fallbackQuestions);
+        setIsUsingFallback(true);
       }
     }
 
     void loadQuestions();
   }, []);
-
-  if (error) {
-    return <div className="error-banner">{error}</div>;
-  }
 
   if (questions.length === 0) {
     return <div className="empty-state">Loading year-wise question groups...</div>;
@@ -42,6 +42,10 @@ export function YearsPage() {
           <h2>The same questions reappear through exam chronology without duplication in storage.</h2>
         </div>
       </section>
+
+      {isUsingFallback ? (
+        <div className="home-fallback-note">Live API data is temporarily unavailable. Showing preview year groups.</div>
+      ) : null}
 
       {Object.entries(grouped).map(([label, items]) => (
         <section key={label} className="group-section">

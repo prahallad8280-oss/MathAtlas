@@ -3,6 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { apiRequest } from "../lib/api";
 import { excerpt, formatDateTime } from "../lib/format";
 import type { Counterexample } from "../types";
+import { fallbackCounterexamples } from "../lib/fallbackData";
 
 type PopularConcept = {
   slug: string;
@@ -14,7 +15,7 @@ type PopularConcept = {
 export function CounterexamplesPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [counterexamples, setCounterexamples] = useState<Counterexample[]>([]);
-  const [error, setError] = useState<string | null>(null);
+  const [isUsingFallback, setIsUsingFallback] = useState(false);
 
   const q = searchParams.get("q") ?? "";
   const concept = searchParams.get("concept") ?? "";
@@ -24,8 +25,17 @@ export function CounterexamplesPage() {
       try {
         const payload = await apiRequest<Counterexample[]>(`/counterexamples${q ? `?q=${encodeURIComponent(q)}` : ""}`);
         setCounterexamples(payload);
+        setIsUsingFallback(false);
       } catch (loadError) {
-        setError(loadError instanceof Error ? loadError.message : "Unable to load counterexamples.");
+        console.warn("Using fallback counterexamples", loadError);
+        setCounterexamples(
+          fallbackCounterexamples.filter((counterexample) =>
+            q
+              ? `${counterexample.title} ${counterexample.explanation}`.toLowerCase().includes(q.toLowerCase())
+              : true,
+          ),
+        );
+        setIsUsingFallback(true);
       }
     }
 
@@ -157,7 +167,9 @@ export function CounterexamplesPage() {
             </div>
           </div>
 
-          {error ? <div className="error-banner">{error}</div> : null}
+          {isUsingFallback ? (
+            <div className="home-fallback-note">Live API data is temporarily unavailable. Showing preview counterexamples.</div>
+          ) : null}
 
           {featuredCounterexamples.length > 0 ? (
             <div className="counterexample-feature-grid">

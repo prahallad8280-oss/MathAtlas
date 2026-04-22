@@ -5,11 +5,12 @@ import { MarkdownContent } from "../components/MarkdownContent";
 import { apiRequest } from "../lib/api";
 import { formatDateTime } from "../lib/format";
 import type { CounterexampleDetail } from "../types";
+import { fallbackCounterexamples } from "../lib/fallbackData";
 
 export function CounterexampleDetailPage() {
   const { slug } = useParams();
   const [counterexample, setCounterexample] = useState<CounterexampleDetail | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [isUsingFallback, setIsUsingFallback] = useState(false);
   const pageRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -21,17 +22,19 @@ export function CounterexampleDetailPage() {
       try {
         const payload = await apiRequest<CounterexampleDetail>(`/counterexamples/${slug}`);
         setCounterexample(payload);
+        setIsUsingFallback(false);
       } catch (loadError) {
-        setError(loadError instanceof Error ? loadError.message : "Unable to load this counterexample.");
+        console.warn("Using fallback counterexample detail", loadError);
+        const fallbackCounterexample =
+          fallbackCounterexamples.find((item) => item.slug === slug) ?? fallbackCounterexamples[0];
+
+        setCounterexample({ ...fallbackCounterexample, linkedItems: [] });
+        setIsUsingFallback(true);
       }
     }
 
     void loadCounterexample();
   }, [slug]);
-
-  if (error) {
-    return <div className="error-banner">{error}</div>;
-  }
 
   if (!counterexample) {
     return <div className="empty-state">Loading counterexample page...</div>;
@@ -55,6 +58,10 @@ export function CounterexampleDetailPage() {
           <ExportPdfButton targetRef={pageRef} filename={counterexample.slug} />
         </div>
       </div>
+
+      {isUsingFallback ? (
+        <div className="home-fallback-note">Live API data is temporarily unavailable. Showing a preview counterexample.</div>
+      ) : null}
 
       <div className="academic-layout">
         <aside className="academic-sidebar">
