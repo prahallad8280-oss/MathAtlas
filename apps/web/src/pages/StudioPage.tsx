@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { apiRequest } from "../lib/api";
+import { ApiError, apiRequest } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { formatDateTime, excerpt } from "../lib/format";
 import { useKnowledge } from "../lib/knowledge";
@@ -57,6 +57,7 @@ export function StudioPage() {
 
     try {
       setIsLoading(true);
+      setError(null);
       const [questionData, conceptData, counterexampleData] = await Promise.all([
         apiRequest<Question[]>("/questions", { token }),
         apiRequest<Concept[]>("/concepts", { token }),
@@ -67,7 +68,11 @@ export function StudioPage() {
       setConcepts(conceptData);
       setCounterexamples(counterexampleData);
     } catch (loadError) {
+      if (loadError instanceof ApiError && loadError.status === 503) {
+        setError("The Render backend is waking up. Refresh again in a few seconds.");
+      } else {
       setError(loadError instanceof Error ? loadError.message : "Unable to load studio content.");
+      }
     } finally {
       setIsLoading(false);
     }

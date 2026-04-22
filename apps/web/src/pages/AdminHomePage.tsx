@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { apiRequest } from "../lib/api";
+import { ApiError, apiRequest } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { excerpt, formatDateTime } from "../lib/format";
 import type { DashboardPayload } from "../types";
@@ -15,7 +15,13 @@ export function AdminHomePage() {
       try {
         const payload = await apiRequest<DashboardPayload>("/meta/dashboard");
         setData(payload);
+        setError(null);
       } catch (loadError) {
+        if (loadError instanceof ApiError && loadError.status === 503) {
+          setError("The Render backend is waking up. Refresh again in a few seconds.");
+          return;
+        }
+
         setError(loadError instanceof Error ? loadError.message : "Unable to load admin dashboard.");
       }
     }
