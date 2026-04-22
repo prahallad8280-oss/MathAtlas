@@ -1,11 +1,14 @@
-import { useEffect, useRef, useState } from "react";
+import { Suspense, lazy, useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ExportPdfButton } from "../components/ExportPdfButton";
-import { MarkdownContent } from "../components/MarkdownContent";
 import { apiRequest } from "../lib/api";
 import { formatDateTime } from "../lib/format";
 import type { QuestionDetail } from "../types";
 import { fallbackQuestions } from "../lib/fallbackData";
+
+const MarkdownContent = lazy(() =>
+  import("../components/MarkdownContent").then((module) => ({ default: module.MarkdownContent })),
+);
 
 export function QuestionDetailPage() {
   const { slug } = useParams();
@@ -61,7 +64,9 @@ export function QuestionDetailPage() {
         </div>
 
         <h2>Question</h2>
-        <MarkdownContent content={question.questionText} />
+        <Suspense fallback={<div className="empty-state">Loading mathematical notation...</div>}>
+          <MarkdownContent content={question.questionText} />
+        </Suspense>
 
         <div className="metadata">
           <span>Question author: {question.author.name}</span>
@@ -78,7 +83,9 @@ export function QuestionDetailPage() {
         {showSolution && question.solution ? (
           <section className="solution-panel">
             <div className="section-label">Detailed Solution</div>
-            <MarkdownContent content={question.solution.content} />
+            <Suspense fallback={<div className="empty-state">Loading mathematical notation...</div>}>
+              <MarkdownContent content={question.solution.content} />
+            </Suspense>
             <div className="metadata">
               <span>Solution author: {question.solution.author?.name ?? question.author.name}</span>
               <span>Updated: {formatDateTime(question.solution.updatedAt)}</span>

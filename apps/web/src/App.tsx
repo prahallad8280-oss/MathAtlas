@@ -1,10 +1,14 @@
 import { lazy, Suspense } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
-import { AdminShell } from "./components/AdminShell";
 import { ProtectedRoute } from "./components/ProtectedRoute";
-import { PublicShell } from "./components/PublicShell";
 import { AuthProvider } from "./lib/auth";
-import { KnowledgeProvider } from "./lib/knowledge";
+
+const AdminShell = lazy(() =>
+  import("./components/AdminShell").then((module) => ({ default: module.AdminShell })),
+);
+const PublicShell = lazy(() =>
+  import("./components/PublicShell").then((module) => ({ default: module.PublicShell })),
+);
 
 const AdminHomePage = lazy(() =>
   import("./pages/AdminHomePage").then((module) => ({ default: module.AdminHomePage })),
@@ -44,43 +48,41 @@ const NotFoundPage = lazy(() =>
 export default function App() {
   return (
     <AuthProvider>
-      <KnowledgeProvider>
-        <BrowserRouter>
-          <Suspense fallback={<div className="empty-state">Loading page...</div>}>
-            <Routes>
-              <Route path="/admin/login" element={<LoginPage />} />
-              <Route
-                path="/admin"
-                element={
-                  <ProtectedRoute>
-                    <AdminShell />
-                  </ProtectedRoute>
-                }
-              >
-                <Route index element={<AdminHomePage />} />
-                <Route path="content" element={<StudioPage />} />
-                <Route path="*" element={<NotFoundPage />} />
-              </Route>
+      <BrowserRouter>
+        <Suspense fallback={<div className="empty-state">Loading page...</div>}>
+          <Routes>
+            <Route path="/admin/login" element={<LoginPage />} />
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute>
+                  <AdminShell />
+                </ProtectedRoute>
+              }
+            >
+              <Route index element={<AdminHomePage />} />
+              <Route path="content" element={<StudioPage />} />
+              <Route path="*" element={<NotFoundPage />} />
+            </Route>
 
-              <Route element={<PublicShell />}>
-                <Route path="/" element={<HomePage />} />
-                <Route path="/questions" element={<QuestionsPage />} />
-                <Route path="/questions/:slug" element={<QuestionDetailPage />} />
-                <Route path="/subjects" element={<SubjectsPage />} />
-                <Route path="/years" element={<YearsPage />} />
-                <Route path="/concepts" element={<ConceptsPage />} />
-                <Route path="/concepts/:slug" element={<ConceptDetailPage />} />
-                <Route path="/counterexamples" element={<CounterexamplesPage />} />
-                <Route path="/counterexamples/:slug" element={<CounterexampleDetailPage />} />
-                <Route path="/search" element={<SearchPage />} />
-                <Route path="/login" element={<Navigate to="/admin/login" replace />} />
-                <Route path="/studio" element={<Navigate to="/admin/content" replace />} />
-                <Route path="*" element={<NotFoundPage />} />
-              </Route>
-            </Routes>
-          </Suspense>
-        </BrowserRouter>
-      </KnowledgeProvider>
+            <Route element={<PublicShell />}>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/questions" element={<QuestionsPage />} />
+              <Route path="/questions/:slug" element={<QuestionDetailPage />} />
+              <Route path="/subjects" element={<SubjectsPage />} />
+              <Route path="/years" element={<YearsPage />} />
+              <Route path="/concepts" element={<ConceptsPage />} />
+              <Route path="/concepts/:slug" element={<ConceptDetailPage />} />
+              <Route path="/counterexamples" element={<CounterexamplesPage />} />
+              <Route path="/counterexamples/:slug" element={<CounterexampleDetailPage />} />
+              <Route path="/search" element={<SearchPage />} />
+              <Route path="/login" element={<Navigate to="/admin/login" replace />} />
+              <Route path="/studio" element={<Navigate to="/admin/content" replace />} />
+              <Route path="*" element={<NotFoundPage />} />
+            </Route>
+          </Routes>
+        </Suspense>
+      </BrowserRouter>
     </AuthProvider>
   );
 }

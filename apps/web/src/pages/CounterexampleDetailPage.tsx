@@ -1,11 +1,14 @@
-import { useEffect, useRef, useState } from "react";
+import { Suspense, lazy, useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ExportPdfButton } from "../components/ExportPdfButton";
-import { MarkdownContent } from "../components/MarkdownContent";
 import { apiRequest } from "../lib/api";
 import { formatDateTime } from "../lib/format";
 import type { CounterexampleDetail } from "../types";
 import { fallbackCounterexamples } from "../lib/fallbackData";
+
+const MarkdownContent = lazy(() =>
+  import("../components/MarkdownContent").then((module) => ({ default: module.MarkdownContent })),
+);
 
 export function CounterexampleDetailPage() {
   const { slug } = useParams();
@@ -112,7 +115,9 @@ export function CounterexampleDetailPage() {
 
           <section className="academic-section" id="counterexample-overview">
             <h3>Overview</h3>
-            <MarkdownContent content={counterexample.explanation} />
+            <Suspense fallback={<div className="empty-state">Loading mathematical notation...</div>}>
+              <MarkdownContent content={counterexample.explanation} />
+            </Suspense>
           </section>
 
           <section className="academic-section" id="counterexample-related-concepts">

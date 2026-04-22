@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import type { ReactNode } from "react";
-import { apiRequest } from "./api";
+import { ApiError, apiRequest } from "./api";
 import type { User } from "../types";
 
 type AuthContextValue = {
@@ -15,26 +15,57 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 const STORAGE_KEY = "mathatlas-auth-token";
+const USER_STORAGE_KEY = "mathatlas-auth-user";
+
+function readStoredUser() {
+  const rawUser = localStorage.getItem(USER_STORAGE_KEY);
+
+  if (!rawUser) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(rawUser) as User;
+  } catch {
+    localStorage.removeItem(USER_STORAGE_KEY);
+    return null;
+  }
+}
+
+function storeSession(nextToken: string, nextUser: User) {
+  localStorage.setItem(STORAGE_KEY, nextToken);
+  localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(nextUser));
+}
+
+function clearStoredSession() {
+  localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem(USER_STORAGE_KEY);
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(localStorage.getItem(STORAGE_KEY));
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(readStoredUser);
   const [isBooting, setIsBooting] = useState(true);
 
   useEffect(() => {
     async function bootstrap() {
       if (!token) {
+        clearStoredSession();
+        setUser(null);
         setIsBooting(false);
         return;
       }
 
       try {
         const currentUser = await apiRequest<User>("/auth/me", { token });
+        localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(currentUser));
         setUser(currentUser);
-      } catch {
-        localStorage.removeItem(STORAGE_KEY);
-        setToken(null);
-        setUser(null);
+      } catch (error) {
+        if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
+          clearStoredSession();
+          setToken(null);
+          setUser(null);
+        }
       } finally {
         setIsBooting(false);
       }
@@ -49,7 +80,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       body: JSON.stringify({ email, password }),
     });
 
-    localStorage.setItem(STORAGE_KEY, result.token);
+    storeSession(result.token, result.user);
     setToken(result.token);
     setUser(result.user);
   }
@@ -60,13 +91,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       body: JSON.stringify({ name, email, password, confirmPassword }),
     });
 
-    localStorage.setItem(STORAGE_KEY, result.token);
+    storeSession(result.token, result.user);
     setToken(result.token);
     setUser(result.user);
   }
 
   function logout() {
-    localStorage.removeItem(STORAGE_KEY);
+    clearStoredSession();
     setToken(null);
     setUser(null);
   }

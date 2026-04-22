@@ -1,8 +1,10 @@
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, Suspense, lazy, useEffect, useState } from "react";
 import { Link, NavLink, Outlet, useNavigate, useSearchParams } from "react-router-dom";
-import { AuthModal } from "./AuthModal";
-import { useAuth } from "../lib/auth";
 import { apiRequest } from "../lib/api";
+
+const AuthModal = lazy(() =>
+  import("./AuthModal").then((module) => ({ default: module.AuthModal })),
+);
 
 const navigation = [
   { label: "Home", to: "/" },
@@ -17,13 +19,15 @@ const navigation = [
 export function PublicShell() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { isAuthenticated, user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const authMode = searchParams.get("auth");
   const next = searchParams.get("next");
 
   useEffect(() => {
     const sessionKey = "mathatlas-visitor-view-recorded";
+    const timer = window.setTimeout(() => {
+      void recordVisitorView();
+    }, 1800);
 
     async function recordVisitorView() {
       if (sessionStorage.getItem(sessionKey)) {
@@ -38,7 +42,9 @@ export function PublicShell() {
       }
     }
 
-    void recordVisitorView();
+    return () => {
+      window.clearTimeout(timer);
+    };
   }, []);
 
   function updateAuthQuery(mode: "login" | "create" | null) {
@@ -78,32 +84,21 @@ export function PublicShell() {
 
           <div className="public-tools">
             <form className="public-search-form" onSubmit={handleSubmit}>
+              <button className="public-search-icon" type="submit" aria-label="Search">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    d="M10.5 4.5a6 6 0 1 0 0 12a6 6 0 0 0 0-12Zm0-1.5a7.5 7.5 0 1 1 4.72 13.33l4.72 4.72a.75.75 0 1 1-1.06 1.06l-4.72-4.72A7.5 7.5 0 0 1 10.5 3Z"
+                    fill="currentColor"
+                  />
+                </svg>
+              </button>
               <input
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
-                placeholder="Search questions, concepts, counterexamples..."
+                placeholder="Search"
+                aria-label="Search MathAtlas"
               />
-              <button className="primary-button" type="submit">
-                Search
-              </button>
             </form>
-
-            <div className="public-auth-row">
-              {isAuthenticated && user ? (
-                <>
-                  <span className="public-status-pill">
-                    Signed in as {user.name} ({user.role})
-                  </span>
-                  <Link className="ghost-button" to="/admin">
-                    Open Admin
-                  </Link>
-                </>
-              ) : (
-                <button className="primary-button" onClick={() => updateAuthQuery("login")} type="button">
-                  Admin / Author Login
-                </button>
-              )}
-            </div>
           </div>
         </div>
 
@@ -165,12 +160,14 @@ export function PublicShell() {
       </footer>
 
       {authMode === "login" || authMode === "create" ? (
-        <AuthModal
-          mode={authMode}
-          next={next}
-          onClose={() => updateAuthQuery(null)}
-          onModeChange={(mode) => updateAuthQuery(mode)}
-        />
+        <Suspense fallback={null}>
+          <AuthModal
+            mode={authMode}
+            next={next}
+            onClose={() => updateAuthQuery(null)}
+            onModeChange={(mode) => updateAuthQuery(mode)}
+          />
+        </Suspense>
       ) : null}
     </div>
   );
