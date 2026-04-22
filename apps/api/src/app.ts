@@ -11,9 +11,32 @@ import { config } from "./config.js";
 
 export const app = express();
 
+const isAllowedOrigin = (origin?: string) => {
+  if (!origin) {
+    return true;
+  }
+
+  if (config.clientOrigins.includes(origin)) {
+    return true;
+  }
+
+  return (
+    /^https:\/\/[a-z0-9-]+(\.[a-z0-9-]+)*\.workers\.dev$/i.test(origin) ||
+    /^https:\/\/[a-z0-9-]+(\.[a-z0-9-]+)*\.pages\.dev$/i.test(origin) ||
+    /^http:\/\/(localhost|127\.0\.0\.1):\d+$/i.test(origin)
+  );
+};
+
 app.use(
   cors({
-    origin: config.clientOrigin,
+    origin(origin, callback) {
+      if (isAllowedOrigin(origin)) {
+        callback(null, true);
+        return;
+      }
+
+      callback(null, false);
+    },
     credentials: true,
   }),
 );
