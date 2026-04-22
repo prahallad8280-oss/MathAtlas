@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { apiRequest } from "../lib/api";
 import { ListPageShell } from "../components/LoadingShell";
@@ -47,10 +47,6 @@ export function CounterexamplesPage() {
     void loadCounterexamples();
   }, [q]);
 
-  function handleSearchSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-  }
-
   function updateFilter(name: string, value: string) {
     const next = new URLSearchParams(searchParams);
 
@@ -96,6 +92,8 @@ export function CounterexamplesPage() {
       )
     : sortedCounterexamples;
 
+  const featuredCounterexamples = filteredCounterexamples.slice(0, 3);
+  const archiveCounterexamples = filteredCounterexamples.slice(3);
   const sidebarPosts = sortedCounterexamples.slice(0, 6);
 
   if (isLoading && counterexamples.length === 0) {
@@ -109,24 +107,18 @@ export function CounterexamplesPage() {
           <div className="counterexample-rail-brand">
             <div className="section-label">Math Counterexamples</div>
             <h2>Exceptions to rules and intuition.</h2>
+            <p>
+              A public archive of failures, edge cases, and minimal hypotheses that keep theorems honest.
+            </p>
           </div>
 
-          <form className="counterexample-search-form" onSubmit={handleSearchSubmit}>
+          <div className="counterexample-search-box">
             <input
               value={q}
               onChange={(event) => updateFilter("q", event.target.value)}
               placeholder="Search counterexamples..."
-              aria-label="Search counterexamples"
             />
-            <button className="counterexample-search-button" type="submit" aria-label="Search counterexamples">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path
-                  d="M10.5 4.5a6 6 0 1 0 0 12a6 6 0 0 0 0-12Zm0-1.5a7.5 7.5 0 1 1 4.72 13.33l4.72 4.72a.75.75 0 1 1-1.06 1.06l-4.72-4.72A7.5 7.5 0 0 1 10.5 3Z"
-                  fill="currentColor"
-                />
-              </svg>
-            </button>
-          </form>
+          </div>
 
           <div className="counterexample-rail-section">
             <div className="section-label">Recent Posts</div>
@@ -159,9 +151,9 @@ export function CounterexamplesPage() {
         <div className="counterexample-stage">
           <div className="counterexample-stage-topbar">
             <div className="counterexample-stage-links">
-              <Link to="/">Home</Link>
               <Link to="/concepts">Theory Index</Link>
               <Link to="/questions">Questions</Link>
+              <Link to="/search">Search</Link>
             </div>
             <div className="counterexample-stage-links">
               <span>{filteredCounterexamples.length} entries</span>
@@ -173,18 +165,54 @@ export function CounterexamplesPage() {
             </div>
           </div>
 
+          <div className="counterexample-stage-header">
+            <div>
+              <div className="eyebrow">Counterexample Atlas</div>
+              <h2>Counterexamples that sharpen mathematical reasoning.</h2>
+              <p>
+                Inspired by mathematical resource sites and textbook reading layouts, this page highlights
+                why one exception can reshape an entire statement.
+              </p>
+            </div>
+          </div>
+
           {isUsingFallback ? (
             <div className="home-fallback-note">Live API data is temporarily unavailable. Showing preview counterexamples.</div>
           ) : null}
 
-          {filteredCounterexamples.length > 0 ? (
+          {featuredCounterexamples.length > 0 ? (
+            <div className="counterexample-feature-grid">
+              {featuredCounterexamples.map((counterexample, index) => (
+                <Link
+                  className={`counterexample-feature-card tone-${(index % 3) + 1}`}
+                  key={counterexample.id}
+                  to={`/counterexamples/${counterexample.slug}`}
+                >
+                  <div className="counterexample-feature-art">
+                    <span>{counterexample.relatedConcepts?.[0]?.title ?? "Counterexample"}</span>
+                  </div>
+                  <div className="counterexample-feature-copy">
+                    <div className="counterexample-feature-meta">
+                      <span>{counterexample.relatedConcepts?.[0]?.type ?? "COUNTEREXAMPLE"}</span>
+                      <span>{formatDateTime(counterexample.createdAt)}</span>
+                    </div>
+                    <h3>{counterexample.title}</h3>
+                    <p>{excerpt(counterexample.explanation, 135)}</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <div className="empty-state">No counterexamples matched the current filters.</div>
+          )}
+
+          {archiveCounterexamples.length > 0 ? (
             <div className="counterexample-archive-grid">
-              {filteredCounterexamples.map((counterexample) => (
+              {archiveCounterexamples.map((counterexample) => (
                 <Link className="counterexample-archive-card" key={counterexample.id} to={`/counterexamples/${counterexample.slug}`}>
                   <div className="counterexample-archive-type">
                     {(counterexample.relatedConcepts ?? []).slice(0, 2).map((item) => item.type).join(" / ") || "COUNTEREXAMPLE"}
                   </div>
-                  <div className="counterexample-archive-date">{formatDateTime(counterexample.createdAt)}</div>
                   <h3>{counterexample.title}</h3>
                   <p>{excerpt(counterexample.explanation, 120)}</p>
                   <div className="counterexample-archive-tags">
@@ -197,9 +225,7 @@ export function CounterexamplesPage() {
                 </Link>
               ))}
             </div>
-          ) : (
-            <div className="empty-state">No counterexamples matched the current filters.</div>
-          )}
+          ) : null}
         </div>
       </section>
     </div>
