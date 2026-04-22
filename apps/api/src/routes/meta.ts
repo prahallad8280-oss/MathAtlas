@@ -5,63 +5,8 @@ const router = Router();
 const VISITOR_VIEW_KEY = "public-visitor-views";
 
 router.get("/dashboard", async (_req, res) => {
-  const [
-    questionCount,
-    solutionCount,
-    conceptCount,
-    theoremCount,
-    definitionCount,
-    resultCount,
-    counterexampleCount,
-    subjectCount,
-    recentQuestions,
-    recentConcepts,
-    recentCounterexamples,
-  ] = await Promise.all([
-    prisma.question.count(),
-    prisma.solution.count(),
-    prisma.concept.count(),
-    prisma.concept.count({ where: { type: "THEOREM" } }),
-    prisma.concept.count({ where: { type: "DEFINITION" } }),
-    prisma.concept.count({ where: { type: "RESULT" } }),
-    prisma.counterexample.count(),
-    prisma.subject.count(),
-    prisma.question.findMany({
-      take: 5,
-      orderBy: { createdAt: "desc" },
-      include: {
-        subject: true,
-        author: { select: { id: true, name: true } },
-        solution: {
-          select: {
-            id: true,
-            content: true,
-            createdAt: true,
-            updatedAt: true,
-            author: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-          },
-        },
-      },
-    }),
-    prisma.concept.findMany({
-      take: 5,
-      orderBy: { createdAt: "desc" },
-      include: { author: { select: { id: true, name: true } } },
-    }),
-    prisma.counterexample.findMany({
-      take: 5,
-      orderBy: { createdAt: "desc" },
-      include: { author: { select: { id: true, name: true } } },
-    }),
-  ]);
-
-  return res.json({
-    stats: {
+  try {
+    const [
       questionCount,
       solutionCount,
       conceptCount,
@@ -70,26 +15,106 @@ router.get("/dashboard", async (_req, res) => {
       resultCount,
       counterexampleCount,
       subjectCount,
-    },
-    recentQuestions,
-    recentConcepts,
-    recentCounterexamples,
-  });
+      recentQuestions,
+      recentConcepts,
+      recentCounterexamples,
+    ] = await Promise.all([
+      prisma.question.count(),
+      prisma.solution.count(),
+      prisma.concept.count(),
+      prisma.concept.count({ where: { type: "THEOREM" } }),
+      prisma.concept.count({ where: { type: "DEFINITION" } }),
+      prisma.concept.count({ where: { type: "RESULT" } }),
+      prisma.counterexample.count(),
+      prisma.subject.count(),
+      prisma.question.findMany({
+        take: 5,
+        orderBy: { createdAt: "desc" },
+        include: {
+          subject: true,
+          author: { select: { id: true, name: true } },
+          solution: {
+            select: {
+              id: true,
+              content: true,
+              createdAt: true,
+              updatedAt: true,
+              author: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
+        },
+      }),
+      prisma.concept.findMany({
+        take: 5,
+        orderBy: { createdAt: "desc" },
+        include: { author: { select: { id: true, name: true } } },
+      }),
+      prisma.counterexample.findMany({
+        take: 5,
+        orderBy: { createdAt: "desc" },
+        include: { author: { select: { id: true, name: true } } },
+      }),
+    ]);
+
+    return res.json({
+      stats: {
+        questionCount,
+        solutionCount,
+        conceptCount,
+        theoremCount,
+        definitionCount,
+        resultCount,
+        counterexampleCount,
+        subjectCount,
+      },
+      recentQuestions,
+      recentConcepts,
+      recentCounterexamples,
+    });
+  } catch (error) {
+    console.error("Dashboard query failed", error);
+
+    return res.json({
+      stats: {
+        questionCount: 0,
+        solutionCount: 0,
+        conceptCount: 0,
+        theoremCount: 0,
+        definitionCount: 0,
+        resultCount: 0,
+        counterexampleCount: 0,
+        subjectCount: 0,
+      },
+      recentQuestions: [],
+      recentConcepts: [],
+      recentCounterexamples: [],
+    });
+  }
 });
 
 router.get("/subjects", async (_req, res) => {
-  const subjects = await prisma.subject.findMany({
-    include: {
-      _count: {
-        select: {
-          questions: true,
+  try {
+    const subjects = await prisma.subject.findMany({
+      include: {
+        _count: {
+          select: {
+            questions: true,
+          },
         },
       },
-    },
-    orderBy: { name: "asc" },
-  });
+      orderBy: { name: "asc" },
+    });
 
-  return res.json(subjects);
+    return res.json(subjects);
+  } catch (error) {
+    console.error("Subjects query failed", error);
+    return res.json([]);
+  }
 });
 
 router.get("/years", async (_req, res) => {

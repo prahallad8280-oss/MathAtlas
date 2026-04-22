@@ -12,22 +12,22 @@ type SubjectAccent = {
 
 const subjectAccents: Record<string, SubjectAccent> = {
   "real-analysis": {
-    icon: "∫",
+    icon: "int",
     tone: "blue",
     description: "Sequences, limits, continuity, differentiation, and measure ideas.",
   },
   "linear-algebra": {
-    icon: "⊞",
+    icon: "grid",
     tone: "green",
     description: "Matrices, vector spaces, linear maps, and spectral viewpoints.",
   },
   "abstract-algebra": {
-    icon: "◈",
+    icon: "alg",
     tone: "purple",
     description: "Groups, rings, fields, homomorphisms, and algebraic structure.",
   },
   topology: {
-    icon: "◎",
+    icon: "top",
     tone: "orange",
     description: "Metric spaces, connectedness, compactness, and continuity.",
   },
@@ -38,10 +38,135 @@ const subjectAccents: Record<string, SubjectAccent> = {
   },
 };
 
+const fallbackSubjects: Subject[] = [
+  {
+    id: "fallback-real-analysis",
+    name: "Real Analysis",
+    slug: "real-analysis",
+    _count: { questions: 125 },
+  },
+  {
+    id: "fallback-linear-algebra",
+    name: "Linear Algebra",
+    slug: "linear-algebra",
+    _count: { questions: 95 },
+  },
+  {
+    id: "fallback-abstract-algebra",
+    name: "Abstract Algebra",
+    slug: "abstract-algebra",
+    _count: { questions: 65 },
+  },
+  {
+    id: "fallback-topology",
+    name: "Topology",
+    slug: "topology",
+    _count: { questions: 55 },
+  },
+  {
+    id: "fallback-ordinary-differential-equations",
+    name: "Ordinary Differential Equations",
+    slug: "ordinary-differential-equations",
+    _count: { questions: 40 },
+  },
+];
+
+const fallbackDashboard: DashboardPayload = {
+  stats: {
+    questionCount: 450,
+    solutionCount: 120,
+    conceptCount: 180,
+    theoremCount: 80,
+    definitionCount: 100,
+    resultCount: 40,
+    counterexampleCount: 50,
+    subjectCount: fallbackSubjects.length,
+  },
+  recentQuestions: [
+    {
+      id: "fallback-rank-matrix",
+      slug: "rank-of-a-matrix",
+      questionText: "Rank of a matrix and dimension of its null space.",
+      year: 2023,
+      session: "DECEMBER",
+      createdAt: "2025-04-15T00:00:00.000Z",
+      updatedAt: "2025-04-15T00:00:00.000Z",
+      subject: fallbackSubjects[1],
+      author: { id: "fallback-author", name: "MathAtlas" },
+    },
+    {
+      id: "fallback-evt",
+      slug: "extreme-value-theorem",
+      questionText: "Extreme Value Theorem and compactness in real analysis.",
+      year: 2024,
+      session: "JUNE",
+      createdAt: "2025-04-10T00:00:00.000Z",
+      updatedAt: "2025-04-10T00:00:00.000Z",
+      subject: fallbackSubjects[0],
+      author: { id: "fallback-author", name: "MathAtlas" },
+    },
+    {
+      id: "fallback-normal-subgroups",
+      slug: "normal-subgroups",
+      questionText: "Normal subgroups and quotient group structure.",
+      year: 2022,
+      session: "DECEMBER",
+      createdAt: "2025-04-05T00:00:00.000Z",
+      updatedAt: "2025-04-05T00:00:00.000Z",
+      subject: fallbackSubjects[2],
+      author: { id: "fallback-author", name: "MathAtlas" },
+    },
+    {
+      id: "fallback-compactness",
+      slug: "compactness-in-metric-spaces",
+      questionText: "Compactness in metric spaces and sequential compactness.",
+      year: 2023,
+      session: "JUNE",
+      createdAt: "2025-04-01T00:00:00.000Z",
+      updatedAt: "2025-04-01T00:00:00.000Z",
+      subject: fallbackSubjects[3],
+      author: { id: "fallback-author", name: "MathAtlas" },
+    },
+  ],
+  recentConcepts: [
+    {
+      id: "fallback-theorem",
+      title: "Extreme Value Theorem",
+      slug: "extreme-value-theorem",
+      content: "A continuous real-valued function on a compact set attains its maximum and minimum.",
+      type: "THEOREM",
+      createdAt: "2025-04-15T00:00:00.000Z",
+      updatedAt: "2025-04-15T00:00:00.000Z",
+      author: { id: "fallback-author", name: "MathAtlas" },
+    },
+    {
+      id: "fallback-definition",
+      title: "Compact Set",
+      slug: "compact-set",
+      content: "A compact set is one for which every open cover has a finite subcover.",
+      type: "DEFINITION",
+      createdAt: "2025-04-10T00:00:00.000Z",
+      updatedAt: "2025-04-10T00:00:00.000Z",
+      author: { id: "fallback-author", name: "MathAtlas" },
+    },
+  ],
+  recentCounterexamples: [
+    {
+      id: "fallback-counterexample",
+      title: "Continuous image need not preserve openness",
+      slug: "continuous-image-need-not-preserve-openness",
+      explanation: "A continuous map can fail to preserve openness when hypotheses are weakened.",
+      createdAt: "2025-04-12T00:00:00.000Z",
+      updatedAt: "2025-04-12T00:00:00.000Z",
+      author: { id: "fallback-author", name: "MathAtlas" },
+    },
+  ],
+};
+
 function getSubjectAccent(subject: Subject): SubjectAccent {
   return (
     subjectAccents[subject.slug] ?? {
-      icon: "∑",
+      icon: "sum",
       tone: "blue",
       description: "Conceptual practice, past-year questions, and linked mathematics.",
     }
@@ -63,7 +188,7 @@ function formatShortDate(value: string) {
 export function HomePage() {
   const [data, setData] = useState<DashboardPayload | null>(null);
   const [subjects, setSubjects] = useState<Subject[]>([]);
-  const [error, setError] = useState<string | null>(null);
+  const [isUsingFallback, setIsUsingFallback] = useState(false);
 
   useEffect(() => {
     async function loadHomeData() {
@@ -76,22 +201,21 @@ export function HomePage() {
         setData(dashboardPayload);
         setSubjects(subjectsPayload);
       } catch (loadError) {
-        setError(loadError instanceof Error ? loadError.message : "Unable to load the MathAtlas home page.");
+        console.warn("Using fallback home content", loadError);
+        setData(fallbackDashboard);
+        setSubjects(fallbackSubjects);
+        setIsUsingFallback(true);
       }
     }
 
     void loadHomeData();
   }, []);
 
-  if (error) {
-    return <div className="error-banner">{error}</div>;
-  }
-
   if (!data) {
     return <div className="empty-state">Loading the mathematical atlas...</div>;
   }
 
-  const featuredSubjects = [...subjects]
+  const featuredSubjects = (subjects.length > 0 ? subjects : fallbackSubjects)
     .sort((left, right) => (right._count?.questions ?? 0) - (left._count?.questions ?? 0))
     .slice(0, 5);
 
@@ -122,7 +246,7 @@ export function HomePage() {
   const statCards = [
     { label: "Questions", value: data.stats.questionCount, icon: "?", tone: "blue" },
     { label: "Solutions", value: data.stats.solutionCount, icon: "[]", tone: "slate" },
-    { label: "Theorems", value: data.stats.theoremCount, icon: "Σ", tone: "blue" },
+    { label: "Theorems", value: data.stats.theoremCount, icon: "sum", tone: "blue" },
     { label: "Counterexamples", value: data.stats.counterexampleCount, icon: "!", tone: "gold" },
   ];
 
@@ -131,21 +255,21 @@ export function HomePage() {
       title: "Theorems",
       value: data.stats.theoremCount,
       href: "/concepts?type=THEOREM",
-      icon: "□",
+      icon: "thm",
       tone: "blue",
     },
     {
       title: "Definitions",
       value: data.stats.definitionCount,
       href: "/concepts?type=DEFINITION",
-      icon: "≡",
+      icon: "def",
       tone: "green",
     },
     {
       title: "Results",
       value: data.stats.resultCount,
       href: "/concepts?type=RESULT",
-      icon: "→",
+      icon: "res",
       tone: "purple",
     },
     {
@@ -180,8 +304,8 @@ export function HomePage() {
 
         <div className="home-reference-visual" aria-hidden="true">
           <div className="home-visual-equations">
-            <span className="home-equation top">Σ 1/n² = π²/6</span>
-            <span className="home-equation middle">∫ f(x) dx</span>
+            <span className="home-equation top">sum 1/n^2 = pi^2/6</span>
+            <span className="home-equation middle">int f(x) dx</span>
             <span className="home-equation curve">y = f(x)</span>
           </div>
 
@@ -196,6 +320,12 @@ export function HomePage() {
           <img className="home-visual-logo" src="/mathatlas-logo.png" alt="" />
         </div>
       </section>
+
+      {isUsingFallback ? (
+        <div className="home-fallback-note">
+          Live database content is warming up. Showing a preview layout while MathAtlas reconnects.
+        </div>
+      ) : null}
 
       <section className="home-reference-stats">
         {statCards.map((item) => (
