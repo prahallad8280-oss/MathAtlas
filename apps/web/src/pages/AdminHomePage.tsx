@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { AdminPageShell } from "../components/LoadingShell";
 import { Link } from "react-router-dom";
 import { ApiError, apiRequest } from "../lib/api";
 import { useAuth } from "../lib/auth";
@@ -34,7 +35,7 @@ export function AdminHomePage() {
   }
 
   if (!data) {
-    return <div className="empty-state">Loading admin workspace...</div>;
+    return <AdminPageShell />;
   }
 
   const firstName = (user?.name ?? "there").split(" ")[0];

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import { ListPageShell } from "../components/LoadingShell";
 import { apiRequest } from "../lib/api";
 import { QuestionCard } from "../components/QuestionCard";
 import type { ExamSession, Question, Subject } from "../types";
@@ -94,6 +95,10 @@ export function QuestionsPage() {
 
   const yearOptions = [...new Set(years.map((item) => item.year))];
 
+  if (isLoading && questions.length === 0) {
+    return <ListPageShell />;
+  }
+
   return (
     <div className="page-stack">
       <section className="page-heading">
@@ -135,7 +140,6 @@ export function QuestionsPage() {
       {isUsingFallback ? (
         <div className="home-fallback-note">Live API data is temporarily unavailable. Showing preview questions.</div>
       ) : null}
-      {isLoading ? <div className="empty-state">Loading questions...</div> : null}
       {!isLoading && questions.length === 0 ? (
         <div className="empty-state">No questions matched the current filters.</div>
       ) : null}

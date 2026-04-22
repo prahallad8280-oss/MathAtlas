@@ -285,7 +285,6 @@ export function HomePage() {
     <div className="page-stack home-reference-page">
       <section className="home-reference-hero">
         <div className="home-reference-copy">
-          <div className="eyebrow">MathAtlas Platform</div>
           <h1>Everything CSIR NET Mathematics, in one place.</h1>
           <p>
             Previous year questions with solutions, important theorems, counterexamples, and definitions

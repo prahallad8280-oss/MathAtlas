@@ -1,6 +1,7 @@
 import { Suspense, lazy, useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ExportPdfButton } from "../components/ExportPdfButton";
+import { DetailPageShell, InlineContentShell } from "../components/LoadingShell";
 import { apiRequest } from "../lib/api";
 import { formatDateTime } from "../lib/format";
 import type { QuestionDetail } from "../types";
@@ -39,7 +40,7 @@ export function QuestionDetailPage() {
   }, [slug]);
 
   if (!question) {
-    return <div className="empty-state">Loading question page...</div>;
+    return <DetailPageShell />;
   }
 
   return (
@@ -64,7 +65,7 @@ export function QuestionDetailPage() {
         </div>
 
         <h2>Question</h2>
-        <Suspense fallback={<div className="empty-state">Loading mathematical notation...</div>}>
+        <Suspense fallback={<InlineContentShell />}>
           <MarkdownContent content={question.questionText} />
         </Suspense>
 
@@ -83,7 +84,7 @@ export function QuestionDetailPage() {
         {showSolution && question.solution ? (
           <section className="solution-panel">
             <div className="section-label">Detailed Solution</div>
-            <Suspense fallback={<div className="empty-state">Loading mathematical notation...</div>}>
+            <Suspense fallback={<InlineContentShell />}>
               <MarkdownContent content={question.solution.content} />
             </Suspense>
             <div className="metadata">

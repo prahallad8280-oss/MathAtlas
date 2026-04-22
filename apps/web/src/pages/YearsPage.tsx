@@ -1,16 +1,19 @@
 import { useEffect, useState } from "react";
 import { apiRequest } from "../lib/api";
+import { ListPageShell } from "../components/LoadingShell";
 import { QuestionCard } from "../components/QuestionCard";
 import type { Question } from "../types";
 import { fallbackQuestions } from "../lib/fallbackData";
 
 export function YearsPage() {
   const [questions, setQuestions] = useState<Question[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isUsingFallback, setIsUsingFallback] = useState(false);
 
   useEffect(() => {
     async function loadQuestions() {
       try {
+        setIsLoading(true);
         const payload = await apiRequest<Question[]>("/questions");
         setQuestions(payload);
         setIsUsingFallback(false);
@@ -18,14 +21,16 @@ export function YearsPage() {
         console.warn("Using fallback year groups", loadError);
         setQuestions(fallbackQuestions);
         setIsUsingFallback(true);
+      } finally {
+        setIsLoading(false);
       }
     }
 
     void loadQuestions();
   }, []);
 
-  if (questions.length === 0) {
-    return <div className="empty-state">Loading year-wise question groups...</div>;
+  if (isLoading && questions.length === 0) {
+    return <ListPageShell />;
   }
 
   const grouped = questions.reduce<Record<string, Question[]>>((accumulator, question) => {

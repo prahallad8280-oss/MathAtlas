@@ -1,6 +1,7 @@
 import { Suspense, lazy, useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ExportPdfButton } from "../components/ExportPdfButton";
+import { DetailPageShell, InlineContentShell } from "../components/LoadingShell";
 import { apiRequest } from "../lib/api";
 import { formatDateTime } from "../lib/format";
 import type { ConceptDetail } from "../types";
@@ -42,7 +43,7 @@ export function ConceptDetailPage() {
   }, [slug]);
 
   if (!concept) {
-    return <div className="empty-state">Loading concept page...</div>;
+    return <DetailPageShell />;
   }
 
   return (
@@ -117,7 +118,7 @@ export function ConceptDetailPage() {
 
           <section className="academic-section" id="concept-statement">
             <h3>Statement</h3>
-            <Suspense fallback={<div className="empty-state">Loading mathematical notation...</div>}>
+            <Suspense fallback={<InlineContentShell />}>
               <MarkdownContent content={concept.content} />
             </Suspense>
           </section>

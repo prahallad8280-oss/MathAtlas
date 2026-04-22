@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { apiRequest } from "../lib/api";
+import { ListPageShell } from "../components/LoadingShell";
 import type { SearchResult } from "../types";
 import { fallbackSearchResults } from "../lib/fallbackData";
 
 export function SearchPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [results, setResults] = useState<SearchResult[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const [isUsingFallback, setIsUsingFallback] = useState(false);
 
   const q = searchParams.get("q") ?? "";
@@ -16,10 +18,12 @@ export function SearchPage() {
       if (!q) {
         setResults([]);
         setIsUsingFallback(false);
+        setIsLoading(false);
         return;
       }
 
       try {
+        setIsLoading(true);
         const payload = await apiRequest<{ results: SearchResult[] }>(`/search?q=${encodeURIComponent(q)}`);
         setResults(payload.results);
         setIsUsingFallback(false);
@@ -31,11 +35,17 @@ export function SearchPage() {
           ),
         );
         setIsUsingFallback(true);
+      } finally {
+        setIsLoading(false);
       }
     }
 
     void loadResults();
   }, [q]);
+
+  if (q && isLoading && results.length === 0) {
+    return <ListPageShell />;
+  }
 
   return (
     <div className="page-stack">

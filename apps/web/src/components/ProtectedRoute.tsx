@@ -1,13 +1,14 @@
 import { Navigate, useLocation } from "react-router-dom";
 import type { ReactNode } from "react";
 import { useAuth } from "../lib/auth";
+import { AuthGuardShell } from "./LoadingShell";
 
 export function ProtectedRoute({ children }: { children: ReactNode }) {
   const { isAuthenticated, isBooting } = useAuth();
   const location = useLocation();
 
   if (isBooting) {
-    return <div className="empty-state">Checking your author session...</div>;
+    return <AuthGuardShell />;
   }
 
   if (!isAuthenticated) {

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { AdminPageShell } from "../components/LoadingShell";
 import { ApiError, apiRequest } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { formatDateTime, excerpt } from "../lib/format";
@@ -183,7 +184,7 @@ export function StudioPage() {
   }
 
   if (isLoading) {
-    return <div className="empty-state">Loading author studio...</div>;
+    return <AdminPageShell />;
   }
 
   return (

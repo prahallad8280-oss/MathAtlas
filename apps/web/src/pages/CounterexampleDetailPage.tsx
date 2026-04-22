@@ -1,6 +1,7 @@
 import { Suspense, lazy, useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ExportPdfButton } from "../components/ExportPdfButton";
+import { DetailPageShell, InlineContentShell } from "../components/LoadingShell";
 import { apiRequest } from "../lib/api";
 import { formatDateTime } from "../lib/format";
 import type { CounterexampleDetail } from "../types";
@@ -40,7 +41,7 @@ export function CounterexampleDetailPage() {
   }, [slug]);
 
   if (!counterexample) {
-    return <div className="empty-state">Loading counterexample page...</div>;
+    return <DetailPageShell />;
   }
 
   return (
@@ -115,7 +116,7 @@ export function CounterexampleDetailPage() {
 
           <section className="academic-section" id="counterexample-overview">
             <h3>Overview</h3>
-            <Suspense fallback={<div className="empty-state">Loading mathematical notation...</div>}>
+            <Suspense fallback={<InlineContentShell />}>
               <MarkdownContent content={counterexample.explanation} />
             </Suspense>
           </section>

@@ -1,6 +1,7 @@
 import { FormEvent, Suspense, lazy, useEffect, useState } from "react";
-import { Link, NavLink, Outlet, useNavigate, useSearchParams } from "react-router-dom";
+import { NavLink, Outlet, useNavigate, useSearchParams } from "react-router-dom";
 import { apiRequest } from "../lib/api";
+import { HomeSectionShell } from "./LoadingShell";
 
 const AuthModal = lazy(() =>
   import("./AuthModal").then((module) => ({ default: module.AuthModal })),
@@ -15,46 +16,6 @@ const navigation = [
   { label: "Counterexamples", to: "/counterexamples" },
   { label: "Search", to: "/search" },
 ];
-
-function PublicMainFallback() {
-  return (
-    <div className="page-stack shell-loading-home" aria-hidden="true">
-      <section className="shell-loading-hero">
-        <span className="shell-loading-badge" />
-        <span className="shell-loading-title" />
-        <span className="shell-loading-line wide" />
-        <span className="shell-loading-line medium" />
-        <div className="shell-loading-actions">
-          <span className="shell-loading-button" />
-          <span className="shell-loading-button ghost" />
-        </div>
-      </section>
-
-      <section className="shell-loading-stats">
-        {Array.from({ length: 4 }, (_, index) => (
-          <div className="shell-loading-stat-card" key={index}>
-            <span className="shell-loading-icon" />
-            <div className="shell-loading-copy">
-              <span className="shell-loading-line short" />
-              <span className="shell-loading-line tiny" />
-            </div>
-          </div>
-        ))}
-      </section>
-
-      <section className="shell-loading-columns">
-        {Array.from({ length: 3 }, (_, index) => (
-          <article className="shell-loading-panel" key={index}>
-            <span className="shell-loading-line short" />
-            <span className="shell-loading-line wide" />
-            <span className="shell-loading-line medium" />
-            <span className="shell-loading-line medium" />
-          </article>
-        ))}
-      </section>
-    </div>
-  );
-}
 
 export function PublicShell() {
   const navigate = useNavigate();
@@ -112,14 +73,12 @@ export function PublicShell() {
       <header className="public-header">
         <div className="public-header-row">
           <div className="public-brand-block">
-            <Link className="public-brand-link" to="/">
+            <NavLink className="public-brand-link" to="/">
               <img className="public-brand-logo" src="/mathatlas-logo.png" alt="MathAtlas logo" />
               <div className="public-brand-copy">
                 <span className="public-brand-title">MathAtlas</span>
-                <span className="public-brand-tagline">Mathematical Blog and CSIR NET Question Bank</span>
               </div>
-            </Link>
-            <p>Open mathematical notes, CSIR NET questions, linked theorems, and counterexamples for everyone.</p>
+            </NavLink>
           </div>
 
           <div className="public-tools">
@@ -157,47 +116,14 @@ export function PublicShell() {
       </header>
 
       <main className="public-main">
-        <Suspense fallback={<PublicMainFallback />}>
+        <Suspense fallback={<HomeSectionShell />}>
           <Outlet />
         </Suspense>
       </main>
 
       <footer className="public-footer">
-        <div className="public-footer-top">
-          <div className="public-footer-brand">
-            <img className="public-footer-logo" src="/mathatlas-logo.png" alt="MathAtlas logo" />
-            <div className="public-footer-copy">
-              <strong>MathAtlas</strong>
-              <p>Public mathematical knowledge, linked theory, and CSIR NET preparation in one open platform.</p>
-            </div>
-          </div>
-
-          <div className="public-footer-links">
-            <div className="public-footer-column">
-              <div className="section-label">Explore</div>
-              <div className="footer-link-list">
-                <Link to="/">Home</Link>
-                <Link to="/questions">Questions</Link>
-                <Link to="/concepts">Concepts</Link>
-                <Link to="/counterexamples">Counterexamples</Link>
-              </div>
-            </div>
-
-            <div className="public-footer-column">
-              <div className="section-label">Access</div>
-              <div className="footer-link-list">
-                <Link to="/search">Search</Link>
-                <Link to="/subjects">Subjects</Link>
-                <Link to="/years">Years</Link>
-                <Link to="/admin/login">Admin / Author Login</Link>
-              </div>
-            </div>
-          </div>
-        </div>
-
         <div className="public-footer-bottom">
-          <span>MathAtlas Knowledge Platform</span>
-          <span>Built for mathematical writing, theory links, and CSIR NET question practice.</span>
+          <span>Copyright {"\u00A9"} {new Date().getFullYear()} MathAtlas. All rights reserved.</span>
         </div>
       </footer>
 

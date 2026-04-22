@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { apiRequest } from "../lib/api";
+import { ListPageShell } from "../components/LoadingShell";
 import { excerpt, formatDateTime } from "../lib/format";
 import type { Concept, ConceptType } from "../types";
 import { fallbackConcepts } from "../lib/fallbackData";
@@ -8,6 +9,7 @@ import { fallbackConcepts } from "../lib/fallbackData";
 export function ConceptsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [concepts, setConcepts] = useState<Concept[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isUsingFallback, setIsUsingFallback] = useState(false);
 
   const q = searchParams.get("q") ?? "";
@@ -16,6 +18,7 @@ export function ConceptsPage() {
   useEffect(() => {
     async function loadConcepts() {
       try {
+        setIsLoading(true);
         const params = new URLSearchParams();
         if (q) params.set("q", q);
         if (type) params.set("type", type);
@@ -36,6 +39,8 @@ export function ConceptsPage() {
           }),
         );
         setIsUsingFallback(true);
+      } finally {
+        setIsLoading(false);
       }
     }
 
@@ -47,6 +52,10 @@ export function ConceptsPage() {
     if (value) next.set(name, value);
     else next.delete(name);
     setSearchParams(next);
+  }
+
+  if (isLoading && concepts.length === 0) {
+    return <ListPageShell />;
   }
 
   return (

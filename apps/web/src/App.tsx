@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AdminShell } from "./components/AdminShell";
+import { AuthGuardShell } from "./components/LoadingShell";
 import { PublicShell } from "./components/PublicShell";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AuthProvider } from "./lib/auth";
@@ -38,7 +39,7 @@ const NotFoundPage = lazy(() =>
 );
 
 function PageFallback() {
-  return <div className="empty-state">Loading page...</div>;
+  return <AuthGuardShell />;
 }
 
 function preloadCommonRoutes() {

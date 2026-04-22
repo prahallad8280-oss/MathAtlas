@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { apiRequest } from "../lib/api";
+import { ListPageShell } from "../components/LoadingShell";
 import { excerpt, formatDateTime } from "../lib/format";
 import type { Counterexample } from "../types";
 import { fallbackCounterexamples } from "../lib/fallbackData";
@@ -15,6 +16,7 @@ type PopularConcept = {
 export function CounterexamplesPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [counterexamples, setCounterexamples] = useState<Counterexample[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isUsingFallback, setIsUsingFallback] = useState(false);
 
   const q = searchParams.get("q") ?? "";
@@ -23,6 +25,7 @@ export function CounterexamplesPage() {
   useEffect(() => {
     async function loadCounterexamples() {
       try {
+        setIsLoading(true);
         const payload = await apiRequest<Counterexample[]>(`/counterexamples${q ? `?q=${encodeURIComponent(q)}` : ""}`);
         setCounterexamples(payload);
         setIsUsingFallback(false);
@@ -36,6 +39,8 @@ export function CounterexamplesPage() {
           ),
         );
         setIsUsingFallback(true);
+      } finally {
+        setIsLoading(false);
       }
     }
 
@@ -90,6 +95,10 @@ export function CounterexamplesPage() {
   const featuredCounterexamples = filteredCounterexamples.slice(0, 3);
   const archiveCounterexamples = filteredCounterexamples.slice(3);
   const sidebarPosts = sortedCounterexamples.slice(0, 6);
+
+  if (isLoading && counterexamples.length === 0) {
+    return <ListPageShell />;
+  }
 
   return (
     <div className="page-stack">

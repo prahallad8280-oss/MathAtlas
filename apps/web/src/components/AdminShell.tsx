@@ -2,6 +2,7 @@ import { Suspense, useEffect, useState } from "react";
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { apiRequest } from "../lib/api";
 import { useAuth } from "../lib/auth";
+import { AdminPageShell } from "./LoadingShell";
 import type { SiteStats } from "../types";
 
 const navigation = [
@@ -89,7 +90,7 @@ export function AdminShell() {
         </header>
 
         <main className="admin-main-content">
-          <Suspense fallback={<div className="empty-state">Loading page...</div>}>
+          <Suspense fallback={<AdminPageShell />}>
             <Outlet />
           </Suspense>
         </main>
