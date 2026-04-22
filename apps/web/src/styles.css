@@ -273,8 +273,7 @@ code {
   color: #f6f2e8;
 }
 
-.counterexample-rail-brand h2,
-.counterexample-stage-header h2 {
+.counterexample-rail-brand h2 {
   margin: 0;
   font-family: "Source Serif 4", Georgia, serif;
   line-height: 1.08;
@@ -284,25 +283,56 @@ code {
   font-size: 2rem;
 }
 
-.counterexample-rail-brand p,
 .counterexample-feature-copy p,
-.counterexample-stage-header p,
 .counterexample-archive-card p {
   color: rgba(246, 242, 232, 0.78);
   line-height: 1.7;
 }
 
-.counterexample-search-box input {
-  width: 100%;
-  padding: 0.85rem 0.95rem;
+.counterexample-search-form {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.counterexample-search-form input {
+  min-width: 0;
+  flex: 1 1 auto;
+  padding: 0.72rem 0.88rem;
   border-radius: 10px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(255, 255, 255, 0.08);
   color: #f6f2e8;
 }
 
-.counterexample-search-box input::placeholder {
+.counterexample-search-form input::placeholder {
   color: rgba(246, 242, 232, 0.54);
+}
+
+.counterexample-search-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.6rem;
+  height: 2.6rem;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  background: transparent;
+  color: #f6f2e8;
+  cursor: pointer;
+  transition: border-color 120ms ease, color 120ms ease, transform 120ms ease;
+}
+
+.counterexample-search-button:hover {
+  color: #8fe16d;
+  border-color: rgba(143, 225, 109, 0.4);
+  transform: translateY(-1px);
+}
+
+.counterexample-search-button svg {
+  width: 1.05rem;
+  height: 1.05rem;
 }
 
 .counterexample-rail-section {
@@ -348,7 +378,6 @@ code {
 }
 
 .counterexample-stage-topbar,
-.counterexample-stage-header,
 .counterexample-feature-grid,
 .counterexample-archive-grid {
   padding-inline: 1.5rem;
@@ -382,15 +411,6 @@ code {
   border: 0;
   background: transparent;
   cursor: pointer;
-}
-
-.counterexample-stage-header {
-  padding-top: 1.35rem;
-  padding-bottom: 1.1rem;
-}
-
-.counterexample-stage-header h2 {
-  font-size: clamp(2.3rem, 4vw, 3.8rem);
 }
 
 .counterexample-feature-grid {
@@ -483,6 +503,13 @@ code {
   font-size: 0.82rem;
   text-transform: uppercase;
   letter-spacing: 0.14em;
+}
+
+.counterexample-archive-date {
+  color: rgba(246, 242, 232, 0.6);
+  font-size: 0.84rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .counterexample-archive-tags {
@@ -2783,7 +2810,6 @@ code {
   }
 
   .counterexample-stage-topbar,
-  .counterexample-stage-header,
   .counterexample-feature-grid,
   .counterexample-archive-grid {
     padding-inline: 1rem;
