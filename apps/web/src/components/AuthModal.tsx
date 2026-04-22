@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
+import { ApiError } from "../lib/api";
 
 type AuthMode = "login" | "create";
 
@@ -10,6 +11,32 @@ type AuthModalProps = {
   onClose: () => void;
   onModeChange: (mode: AuthMode) => void;
 };
+
+function formatAuthError(error: unknown, mode: AuthMode) {
+  if (error instanceof ApiError) {
+    if (error.status === 401) {
+      return "Email or password is incorrect. Please try again.";
+    }
+
+    if (error.status === 409) {
+      return "This email already has an account. Please log in instead.";
+    }
+
+    if (error.status === 400 && mode === "create") {
+      return "Please check your name, email, password, and confirm password fields.";
+    }
+
+    if (error.status === 503) {
+      return "Login is not ready yet because the server database is still unavailable on Render. Deploy the latest backend and make sure Prisma db push has run.";
+    }
+  }
+
+  return error instanceof Error
+    ? error.message
+    : mode === "login"
+      ? "Unable to log in."
+      : "Unable to create your ID.";
+}
 
 export function AuthModal({ mode, next, onClose, onModeChange }: AuthModalProps) {
   const navigate = useNavigate();
@@ -47,7 +74,7 @@ export function AuthModal({ mode, next, onClose, onModeChange }: AuthModalProps)
       await login(loginEmail, loginPassword);
       navigate(next ?? "/admin", { replace: true });
     } catch (loginError) {
-      setError(loginError instanceof Error ? loginError.message : "Unable to log in.");
+      setError(formatAuthError(loginError, "login"));
     } finally {
       setIsSubmitting(false);
     }
@@ -62,7 +89,7 @@ export function AuthModal({ mode, next, onClose, onModeChange }: AuthModalProps)
       await register(name, registerEmail, registerPassword, confirmPassword);
       navigate(next ?? "/admin", { replace: true });
     } catch (registerError) {
-      setError(registerError instanceof Error ? registerError.message : "Unable to create your ID.");
+      setError(formatAuthError(registerError, "create"));
     } finally {
       setIsSubmitting(false);
     }
@@ -82,23 +109,12 @@ export function AuthModal({ mode, next, onClose, onModeChange }: AuthModalProps)
             Public reading stays open to everyone. Admins and authors use this private popup to enter the
             dashboard or create a new author ID.
           </p>
-        </div>
-
-        <div className="auth-switch-row">
-          <button
-            className={mode === "login" ? "tab-button active" : "tab-button"}
-            onClick={() => onModeChange("login")}
-            type="button"
-          >
-            Login
-          </button>
-          <button
-            className={mode === "create" ? "tab-button active" : "tab-button"}
-            onClick={() => onModeChange("create")}
-            type="button"
-          >
-            Create ID
-          </button>
+          <div className="auth-mode-line">
+            <span>{mode === "login" ? "Already have an account?" : "Need a new account?"}</span>
+            <button className="text-button" onClick={() => onModeChange(mode === "login" ? "create" : "login")} type="button">
+              {mode === "login" ? "Create ID" : "Back to Login"}
+            </button>
+          </div>
         </div>
 
         {mode === "login" ? (
@@ -125,12 +141,12 @@ export function AuthModal({ mode, next, onClose, onModeChange }: AuthModalProps)
                 type="password"
               />
             </label>
-            <div className="button-row">
-              <button className="primary-button" disabled={isSubmitting} type="submit">
-                {isSubmitting ? "Logging in..." : "Login"}
-              </button>
+            <div className="button-row auth-modal-actions">
               <button className="ghost-button" onClick={() => onModeChange("create")} type="button">
                 Create ID
+              </button>
+              <button className="primary-button" disabled={isSubmitting} type="submit">
+                {isSubmitting ? "Logging in..." : "Login"}
               </button>
             </div>
           </form>
@@ -180,12 +196,12 @@ export function AuthModal({ mode, next, onClose, onModeChange }: AuthModalProps)
                 type="password"
               />
             </label>
-            <div className="button-row">
-              <button className="primary-button" disabled={isSubmitting} type="submit">
-                {isSubmitting ? "Creating..." : "Create ID"}
-              </button>
+            <div className="button-row auth-modal-actions">
               <button className="ghost-button" onClick={() => onModeChange("login")} type="button">
                 Back to Login
+              </button>
+              <button className="primary-button" disabled={isSubmitting} type="submit">
+                {isSubmitting ? "Creating..." : "Create ID"}
               </button>
             </div>
           </form>
