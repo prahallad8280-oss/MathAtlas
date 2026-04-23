@@ -6,32 +6,16 @@ import { PublicShell } from "./components/PublicShell";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AuthProvider } from "./lib/auth";
 import { AdminHomePage } from "./pages/AdminHomePage";
+import { ConceptDetailPage } from "./pages/ConceptDetailPage";
+import { ConceptsPage } from "./pages/ConceptsPage";
+import { CounterexampleDetailPage } from "./pages/CounterexampleDetailPage";
+import { CounterexamplesPage } from "./pages/CounterexamplesPage";
 import { HomePage } from "./pages/HomePage";
-const QuestionsPage = lazy(() =>
-  import("./pages/QuestionsPage").then((module) => ({ default: module.QuestionsPage })),
-);
-const QuestionDetailPage = lazy(() =>
-  import("./pages/QuestionDetailPage").then((module) => ({ default: module.QuestionDetailPage })),
-);
-const SubjectsPage = lazy(() =>
-  import("./pages/SubjectsPage").then((module) => ({ default: module.SubjectsPage })),
-);
-const YearsPage = lazy(() => import("./pages/YearsPage").then((module) => ({ default: module.YearsPage })));
-const ConceptsPage = lazy(() =>
-  import("./pages/ConceptsPage").then((module) => ({ default: module.ConceptsPage })),
-);
-const ConceptDetailPage = lazy(() =>
-  import("./pages/ConceptDetailPage").then((module) => ({ default: module.ConceptDetailPage })),
-);
-const CounterexamplesPage = lazy(() =>
-  import("./pages/CounterexamplesPage").then((module) => ({ default: module.CounterexamplesPage })),
-);
-const CounterexampleDetailPage = lazy(() =>
-  import("./pages/CounterexampleDetailPage").then((module) => ({
-    default: module.CounterexampleDetailPage,
-  })),
-);
-const SearchPage = lazy(() => import("./pages/SearchPage").then((module) => ({ default: module.SearchPage })));
+import { QuestionDetailPage } from "./pages/QuestionDetailPage";
+import { QuestionsPage } from "./pages/QuestionsPage";
+import { SearchPage } from "./pages/SearchPage";
+import { SubjectsPage } from "./pages/SubjectsPage";
+import { YearsPage } from "./pages/YearsPage";
 const LoginPage = lazy(() => import("./pages/LoginPage").then((module) => ({ default: module.LoginPage })));
 const StudioPage = lazy(() => import("./pages/StudioPage").then((module) => ({ default: module.StudioPage })));
 const NotFoundPage = lazy(() =>
@@ -43,12 +27,6 @@ function PageFallback() {
 }
 
 function preloadCommonRoutes() {
-  void import("./pages/QuestionsPage");
-  void import("./pages/SubjectsPage");
-  void import("./pages/YearsPage");
-  void import("./pages/ConceptsPage");
-  void import("./pages/CounterexamplesPage");
-  void import("./pages/SearchPage");
   void import("./pages/StudioPage");
 }
 

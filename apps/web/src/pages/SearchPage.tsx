@@ -1,51 +1,48 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { apiRequest } from "../lib/api";
-import { ListPageShell } from "../components/LoadingShell";
 import type { SearchResult } from "../types";
 import { fallbackSearchResults } from "../lib/fallbackData";
 
+function getFallbackSearchPreview(q: string) {
+  return q
+    ? fallbackSearchResults.filter((result) =>
+        `${result.title} ${result.type} ${result.excerpt}`.toLowerCase().includes(q.toLowerCase()),
+      )
+    : [];
+}
+
 export function SearchPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [results, setResults] = useState<SearchResult[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isUsingFallback, setIsUsingFallback] = useState(false);
-
   const q = searchParams.get("q") ?? "";
+  const [results, setResults] = useState<SearchResult[]>(() => getFallbackSearchPreview(q));
+  const [isLoadingLiveContent, setIsLoadingLiveContent] = useState(Boolean(q));
 
   useEffect(() => {
     async function loadResults() {
       if (!q) {
         setResults([]);
-        setIsUsingFallback(false);
-        setIsLoading(false);
+        setIsLoadingLiveContent(false);
         return;
       }
 
+      const fallbackPreview = getFallbackSearchPreview(q);
+
       try {
-        setIsLoading(true);
+        setResults(fallbackPreview);
+        setIsLoadingLiveContent(true);
         const payload = await apiRequest<{ results: SearchResult[] }>(`/search?q=${encodeURIComponent(q)}`);
         setResults(payload.results);
-        setIsUsingFallback(false);
       } catch (loadError) {
         console.warn("Using fallback search results", loadError);
-        setResults(
-          fallbackSearchResults.filter((result) =>
-            `${result.title} ${result.type} ${result.excerpt}`.toLowerCase().includes(q.toLowerCase()),
-          ),
-        );
-        setIsUsingFallback(true);
+        setResults(fallbackPreview);
       } finally {
-        setIsLoading(false);
+        setIsLoadingLiveContent(false);
       }
     }
 
     void loadResults();
   }, [q]);
-
-  if (q && isLoading && results.length === 0) {
-    return <ListPageShell />;
-  }
 
   return (
     <div className="page-stack">
@@ -69,9 +66,6 @@ export function SearchPage() {
         />
       </section>
 
-      {isUsingFallback ? (
-        <div className="home-fallback-note">Live API search is temporarily unavailable. Showing preview results.</div>
-      ) : null}
       {!q ? <div className="empty-state">Type into the search bar to begin exploring the atlas.</div> : null}
 
       <section className="stack-list">

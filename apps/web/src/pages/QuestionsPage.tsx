@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { ListPageShell } from "../components/LoadingShell";
 import { apiRequest } from "../lib/api";
 import { QuestionCard } from "../components/QuestionCard";
 import type { ExamSession, Question, Subject } from "../types";
@@ -14,24 +13,62 @@ type YearGroup = {
   };
 };
 
+function getFallbackQuestionsPreview(q: string, subject: string, year: string, session: string) {
+  return fallbackQuestions.filter((question) => {
+    const matchesQuery = q
+      ? `${question.questionText} ${question.solution?.content ?? ""} ${question.author.name}`
+          .toLowerCase()
+          .includes(q.toLowerCase())
+      : true;
+    const matchesSubject = subject ? question.subject.slug === subject : true;
+    const matchesYear = year ? String(question.year) === year : true;
+    const matchesSession = session ? question.session === session : true;
+
+    return matchesQuery && matchesSubject && matchesYear && matchesSession;
+  });
+}
+
+function getFallbackYearGroups(): YearGroup[] {
+  const groups = new Map<string, YearGroup>();
+
+  for (const question of fallbackQuestions) {
+    const key = `${question.year}-${question.session}`;
+    const existing = groups.get(key);
+
+    if (existing) {
+      existing._count._all += 1;
+    } else {
+      groups.set(key, {
+        year: question.year,
+        session: question.session,
+        _count: { _all: 1 },
+      });
+    }
+  }
+
+  return Array.from(groups.values());
+}
+
 export function QuestionsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [questions, setQuestions] = useState<Question[]>([]);
-  const [subjects, setSubjects] = useState<Subject[]>([]);
-  const [years, setYears] = useState<YearGroup[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isUsingFallback, setIsUsingFallback] = useState(false);
-
   const q = searchParams.get("q") ?? "";
   const subject = searchParams.get("subject") ?? "";
   const year = searchParams.get("year") ?? "";
   const session = searchParams.get("session") ?? "";
+  const [questions, setQuestions] = useState<Question[]>(() => getFallbackQuestionsPreview(q, subject, year, session));
+  const [subjects, setSubjects] = useState<Subject[]>(fallbackSubjects);
+  const [years, setYears] = useState<YearGroup[]>(() => getFallbackYearGroups());
+  const [isLoadingLiveContent, setIsLoadingLiveContent] = useState(true);
 
   useEffect(() => {
     async function loadQuestions() {
+      const fallbackPreview = getFallbackQuestionsPreview(q, subject, year, session);
+
       try {
-        setIsLoading(true);
-        setIsUsingFallback(false);
+        setQuestions(fallbackPreview);
+        setSubjects(fallbackSubjects);
+        setYears(getFallbackYearGroups());
+        setIsLoadingLiveContent(true);
 
         const params = new URLSearchParams();
         if (q) params.set("q", q);
@@ -50,31 +87,11 @@ export function QuestionsPage() {
         setYears(yearData);
       } catch (loadError) {
         console.warn("Using fallback questions", loadError);
-        const filteredFallbackQuestions = fallbackQuestions.filter((question) => {
-          const matchesQuery = q
-            ? `${question.questionText} ${question.solution?.content ?? ""} ${question.author.name}`
-                .toLowerCase()
-                .includes(q.toLowerCase())
-            : true;
-          const matchesSubject = subject ? question.subject.slug === subject : true;
-          const matchesYear = year ? String(question.year) === year : true;
-          const matchesSession = session ? question.session === session : true;
-
-          return matchesQuery && matchesSubject && matchesYear && matchesSession;
-        });
-
-        setQuestions(filteredFallbackQuestions);
+        setQuestions(fallbackPreview);
         setSubjects(fallbackSubjects);
-        setYears(
-          fallbackQuestions.map((question) => ({
-            year: question.year,
-            session: question.session,
-            _count: { _all: 1 },
-          })),
-        );
-        setIsUsingFallback(true);
+        setYears(getFallbackYearGroups());
       } finally {
-        setIsLoading(false);
+        setIsLoadingLiveContent(false);
       }
     }
 
@@ -94,10 +111,6 @@ export function QuestionsPage() {
   }
 
   const yearOptions = [...new Set(years.map((item) => item.year))];
-
-  if (isLoading && questions.length === 0) {
-    return <ListPageShell />;
-  }
 
   return (
     <div className="page-stack">
@@ -137,10 +150,7 @@ export function QuestionsPage() {
         </select>
       </section>
 
-      {isUsingFallback ? (
-        <div className="home-fallback-note">Live API data is temporarily unavailable. Showing preview questions.</div>
-      ) : null}
-      {!isLoading && questions.length === 0 ? (
+      {!isLoadingLiveContent && questions.length === 0 ? (
         <div className="empty-state">No questions matched the current filters.</div>
       ) : null}
 

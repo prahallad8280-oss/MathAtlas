@@ -35,7 +35,11 @@ export function QuestionCard({ question }: { question: Question }) {
         <button className="primary-button" onClick={() => setShowSolution((value) => !value)}>
           {showSolution ? "Hide Solution" : "View Solution"}
         </button>
-        <Link className="ghost-button" to={`/questions/${question.slug}`}>
+        <Link
+          className="ghost-button"
+          to={`/questions/${question.slug}`}
+          state={{ previewQuestion: { ...question, linkedItems: [] } }}
+        >
           Open Question Page
         </Link>
       </div>

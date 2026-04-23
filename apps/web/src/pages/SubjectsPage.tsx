@@ -1,37 +1,30 @@
 import { useEffect, useState } from "react";
 import { apiRequest } from "../lib/api";
-import { ListPageShell } from "../components/LoadingShell";
 import { QuestionCard } from "../components/QuestionCard";
 import type { Question } from "../types";
 import { fallbackQuestions } from "../lib/fallbackData";
 
 export function SubjectsPage() {
-  const [questions, setQuestions] = useState<Question[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isUsingFallback, setIsUsingFallback] = useState(false);
+  const [questions, setQuestions] = useState<Question[]>(fallbackQuestions);
+  const [isLoadingLiveContent, setIsLoadingLiveContent] = useState(true);
 
   useEffect(() => {
     async function loadQuestions() {
       try {
-        setIsLoading(true);
+        setQuestions(fallbackQuestions);
+        setIsLoadingLiveContent(true);
         const payload = await apiRequest<Question[]>("/questions");
         setQuestions(payload);
-        setIsUsingFallback(false);
       } catch (loadError) {
         console.warn("Using fallback subject groups", loadError);
         setQuestions(fallbackQuestions);
-        setIsUsingFallback(true);
       } finally {
-        setIsLoading(false);
+        setIsLoadingLiveContent(false);
       }
     }
 
     void loadQuestions();
   }, []);
-
-  if (isLoading && questions.length === 0) {
-    return <ListPageShell />;
-  }
 
   const grouped = questions.reduce<Record<string, Question[]>>((accumulator, question) => {
     const key = question.subject.name;
@@ -47,10 +40,6 @@ export function SubjectsPage() {
           <h2>One question dataset, regrouped by mathematical subject.</h2>
         </div>
       </section>
-
-      {isUsingFallback ? (
-        <div className="home-fallback-note">Live API data is temporarily unavailable. Showing preview subject groups.</div>
-      ) : null}
 
       {Object.entries(grouped)
         .sort(([left], [right]) => left.localeCompare(right))

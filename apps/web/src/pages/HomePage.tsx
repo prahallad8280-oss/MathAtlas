@@ -188,7 +188,6 @@ function formatShortDate(value: string) {
 export function HomePage() {
   const [data, setData] = useState<DashboardPayload>(fallbackDashboard);
   const [subjects, setSubjects] = useState<Subject[]>(fallbackSubjects);
-  const [isUsingFallback, setIsUsingFallback] = useState(false);
   const [isLoadingLiveContent, setIsLoadingLiveContent] = useState(true);
 
   useEffect(() => {
@@ -201,12 +200,10 @@ export function HomePage() {
 
         setData(dashboardPayload);
         setSubjects(subjectsPayload);
-        setIsUsingFallback(false);
       } catch (loadError) {
         console.warn("Using fallback home content", loadError);
         setData(fallbackDashboard);
         setSubjects(fallbackSubjects);
-        setIsUsingFallback(true);
       } finally {
         setIsLoadingLiveContent(false);
       }
@@ -230,6 +227,13 @@ export function HomePage() {
       type: concept.type,
       excerpt: excerpt(concept.content, 96),
       createdAt: concept.createdAt,
+      state: {
+        previewConcept: {
+          ...concept,
+          linkedItems: [],
+          relatedCounters: concept.relatedCounters ?? [],
+        },
+      },
     })),
     ...data.recentCounterexamples.map((counterexample) => ({
       id: `counterexample-${counterexample.id}`,
@@ -238,6 +242,12 @@ export function HomePage() {
       type: "COUNTEREXAMPLE",
       excerpt: excerpt(counterexample.explanation, 96),
       createdAt: counterexample.createdAt,
+      state: {
+        previewCounterexample: {
+          ...counterexample,
+          linkedItems: [],
+        },
+      },
     })),
   ]
     .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())
@@ -320,12 +330,6 @@ export function HomePage() {
         </div>
       </section>
 
-      {isUsingFallback && !isLoadingLiveContent ? (
-        <div className="home-fallback-note">
-          Live database content is warming up. Showing a preview layout while MathAtlas reconnects.
-        </div>
-      ) : null}
-
       <section className="home-reference-stats">
         {statCards.map((item) => (
           <div className="home-stat-card" key={item.label}>
@@ -376,7 +380,12 @@ export function HomePage() {
 
           <div className="home-question-list">
             {data.recentQuestions.slice(0, 4).map((question) => (
-              <Link className="home-question-item" key={question.id} to={`/questions/${question.slug}`}>
+              <Link
+                className="home-question-item"
+                key={question.id}
+                to={`/questions/${question.slug}`}
+                state={{ previewQuestion: { ...question, linkedItems: [] } }}
+              >
                 <div className="home-question-icon">[]</div>
                 <div className="home-question-copy">
                   <strong>{excerpt(question.questionText, 72)}</strong>
@@ -418,7 +427,7 @@ export function HomePage() {
 
           <div className="home-reading-list">
             {readingItems.map((item, index) => (
-              <Link className="home-reading-item" key={item.id} to={item.href}>
+              <Link className="home-reading-item" key={item.id} state={item.state} to={item.href}>
                 <div className={`home-reading-thumb tone-${(index % 3) + 1}`}>
                   <span>{item.type}</span>
                 </div>

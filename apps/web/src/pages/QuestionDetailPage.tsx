@@ -1,5 +1,5 @@
 import { Suspense, lazy, useEffect, useRef, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
 import { ExportPdfButton } from "../components/ExportPdfButton";
 import { DetailPageShell, InlineContentShell } from "../components/LoadingShell";
 import { apiRequest } from "../lib/api";
@@ -13,9 +13,17 @@ const MarkdownContent = lazy(() =>
 
 export function QuestionDetailPage() {
   const { slug } = useParams();
-  const [question, setQuestion] = useState<QuestionDetail | null>(null);
+  const location = useLocation();
+  const [question, setQuestion] = useState<QuestionDetail | null>(() => {
+    const previewQuestion = (location.state as { previewQuestion?: QuestionDetail } | null)?.previewQuestion;
+
+    if (previewQuestion && previewQuestion.slug === slug) {
+      return previewQuestion;
+    }
+
+    return null;
+  });
   const [showSolution, setShowSolution] = useState(false);
-  const [isUsingFallback, setIsUsingFallback] = useState(false);
   const pageRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -27,12 +35,10 @@ export function QuestionDetailPage() {
       try {
         const payload = await apiRequest<QuestionDetail>(`/questions/${slug}`);
         setQuestion(payload);
-        setIsUsingFallback(false);
       } catch (loadError) {
         console.warn("Using fallback question detail", loadError);
         const fallbackQuestion = fallbackQuestions.find((item) => item.slug === slug) ?? fallbackQuestions[0];
         setQuestion({ ...fallbackQuestion, linkedItems: [] });
-        setIsUsingFallback(true);
       }
     }
 
@@ -51,10 +57,6 @@ export function QuestionDetailPage() {
         </Link>
         <ExportPdfButton targetRef={pageRef} filename={question.slug} />
       </div>
-
-      {isUsingFallback ? (
-        <div className="home-fallback-note">Live API data is temporarily unavailable. Showing a preview question.</div>
-      ) : null}
 
       <article className="detail-card" ref={pageRef}>
         <div className="content-meta-row">

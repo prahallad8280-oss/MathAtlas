@@ -1,5 +1,5 @@
 import { Suspense, lazy, useEffect, useRef, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
 import { ExportPdfButton } from "../components/ExportPdfButton";
 import { DetailPageShell, InlineContentShell } from "../components/LoadingShell";
 import { apiRequest } from "../lib/api";
@@ -13,8 +13,17 @@ const MarkdownContent = lazy(() =>
 
 export function CounterexampleDetailPage() {
   const { slug } = useParams();
-  const [counterexample, setCounterexample] = useState<CounterexampleDetail | null>(null);
-  const [isUsingFallback, setIsUsingFallback] = useState(false);
+  const location = useLocation();
+  const [counterexample, setCounterexample] = useState<CounterexampleDetail | null>(() => {
+    const previewCounterexample =
+      (location.state as { previewCounterexample?: CounterexampleDetail } | null)?.previewCounterexample;
+
+    if (previewCounterexample && previewCounterexample.slug === slug) {
+      return previewCounterexample;
+    }
+
+    return null;
+  });
   const pageRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -26,14 +35,12 @@ export function CounterexampleDetailPage() {
       try {
         const payload = await apiRequest<CounterexampleDetail>(`/counterexamples/${slug}`);
         setCounterexample(payload);
-        setIsUsingFallback(false);
       } catch (loadError) {
         console.warn("Using fallback counterexample detail", loadError);
         const fallbackCounterexample =
           fallbackCounterexamples.find((item) => item.slug === slug) ?? fallbackCounterexamples[0];
 
         setCounterexample({ ...fallbackCounterexample, linkedItems: [] });
-        setIsUsingFallback(true);
       }
     }
 
@@ -62,10 +69,6 @@ export function CounterexampleDetailPage() {
           <ExportPdfButton targetRef={pageRef} filename={counterexample.slug} />
         </div>
       </div>
-
-      {isUsingFallback ? (
-        <div className="home-fallback-note">Live API data is temporarily unavailable. Showing a preview counterexample.</div>
-      ) : null}
 
       <div className="academic-layout">
         <aside className="academic-sidebar">
