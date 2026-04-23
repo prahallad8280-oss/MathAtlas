@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { AdminPageShell } from "../components/LoadingShell";
+import { AdminStudioShell } from "../components/LoadingShell";
 import { ApiError, apiRequest } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { formatDateTime, excerpt } from "../lib/format";
@@ -34,13 +34,43 @@ const emptyCounterexampleForm = {
   relatedConceptIds: [] as string[],
 };
 
+type StudioCache = {
+  questions: Question[];
+  concepts: Concept[];
+  counterexamples: Counterexample[];
+};
+
+const STUDIO_CACHE_KEY = "mathatlas-admin-studio";
+
+function readCachedStudioData() {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  try {
+    const rawValue = window.sessionStorage.getItem(STUDIO_CACHE_KEY);
+    return rawValue ? (JSON.parse(rawValue) as StudioCache) : null;
+  } catch {
+    return null;
+  }
+}
+
+function storeCachedStudioData(value: StudioCache) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.sessionStorage.setItem(STUDIO_CACHE_KEY, JSON.stringify(value));
+}
+
 export function StudioPage() {
   const { token, user } = useAuth();
   const { reload } = useKnowledge();
+  const [cachedStudio] = useState<StudioCache | null>(() => readCachedStudioData());
   const [tab, setTab] = useState<TabKey>("questions");
-  const [questions, setQuestions] = useState<Question[]>([]);
-  const [concepts, setConcepts] = useState<Concept[]>([]);
-  const [counterexamples, setCounterexamples] = useState<Counterexample[]>([]);
+  const [questions, setQuestions] = useState<Question[]>(() => cachedStudio?.questions ?? []);
+  const [concepts, setConcepts] = useState<Concept[]>(() => cachedStudio?.concepts ?? []);
+  const [counterexamples, setCounterexamples] = useState<Counterexample[]>(() => cachedStudio?.counterexamples ?? []);
   const [questionForm, setQuestionForm] = useState(emptyQuestionForm);
   const [conceptForm, setConceptForm] = useState(emptyConceptForm);
   const [counterexampleForm, setCounterexampleForm] = useState(emptyCounterexampleForm);
@@ -49,15 +79,14 @@ export function StudioPage() {
   const [editingCounterexampleId, setEditingCounterexampleId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isBootstrapping, setIsBootstrapping] = useState(() => cachedStudio === null);
 
-  async function loadStudioData() {
+  async function loadStudioData(preserveExisting = false, attempt = 0) {
     if (!token) {
       return;
     }
 
     try {
-      setIsLoading(true);
       setError(null);
       const [questionData, conceptData, counterexampleData] = await Promise.all([
         apiRequest<Question[]>("/questions", { token }),
@@ -68,15 +97,25 @@ export function StudioPage() {
       setQuestions(questionData);
       setConcepts(conceptData);
       setCounterexamples(counterexampleData);
+      storeCachedStudioData({
+        questions: questionData,
+        concepts: conceptData,
+        counterexamples: counterexampleData,
+      });
     } catch (loadError) {
-      if (loadError instanceof ApiError && loadError.status === 503) {
-        setError("The Render backend is waking up. Refresh again in a few seconds.");
-      } else {
-      setError(loadError instanceof Error ? loadError.message : "Unable to load studio content.");
+      if (loadError instanceof ApiError && loadError.status === 503 && attempt < 2) {
+        window.setTimeout(() => {
+          void loadStudioData(preserveExisting, attempt + 1);
+        }, 1800 * (attempt + 1));
+        return;
       }
-    } finally {
-      setIsLoading(false);
+
+      if (!preserveExisting && !cachedStudio) {
+        setError(loadError instanceof Error ? loadError.message : "Unable to load studio content.");
+      }
     }
+
+    setIsBootstrapping(false);
   }
 
   useEffect(() => {
@@ -158,7 +197,7 @@ export function StudioPage() {
         await submitCounterexample();
       }
 
-      await loadStudioData();
+      await loadStudioData(true);
       await reload();
       setMessage("Content saved successfully.");
     } catch (saveError) {
@@ -175,7 +214,7 @@ export function StudioPage() {
       setError(null);
       setMessage(null);
       await apiRequest(path, { method: "DELETE", token });
-      await loadStudioData();
+      await loadStudioData(true);
       await reload();
       setMessage("Content deleted successfully.");
     } catch (deleteError) {
@@ -183,8 +222,8 @@ export function StudioPage() {
     }
   }
 
-  if (isLoading) {
-    return <AdminPageShell />;
+  if (isBootstrapping) {
+    return <AdminStudioShell />;
   }
 
   return (

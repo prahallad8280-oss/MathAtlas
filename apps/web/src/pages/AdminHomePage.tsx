@@ -6,35 +6,82 @@ import { useAuth } from "../lib/auth";
 import { excerpt, formatDateTime } from "../lib/format";
 import type { DashboardPayload } from "../types";
 
+const DASHBOARD_CACHE_KEY = "mathatlas-admin-dashboard";
+
+function readCachedDashboard() {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  try {
+    const rawValue = window.sessionStorage.getItem(DASHBOARD_CACHE_KEY);
+    return rawValue ? (JSON.parse(rawValue) as DashboardPayload) : null;
+  } catch {
+    return null;
+  }
+}
+
+function storeCachedDashboard(value: DashboardPayload) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.sessionStorage.setItem(DASHBOARD_CACHE_KEY, JSON.stringify(value));
+}
+
 export function AdminHomePage() {
   const { user } = useAuth();
-  const [data, setData] = useState<DashboardPayload | null>(null);
+  const [data, setData] = useState<DashboardPayload | null>(() => readCachedDashboard());
   const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(() => readCachedDashboard() === null);
 
   useEffect(() => {
-    async function loadDashboard() {
+    let isCancelled = false;
+    let retryHandle: number | undefined;
+    const hasCachedDashboard = Boolean(readCachedDashboard());
+
+    async function loadDashboard(attempt = 0) {
       try {
         const payload = await apiRequest<DashboardPayload>("/meta/dashboard");
-        setData(payload);
-        setError(null);
-      } catch (loadError) {
-        if (loadError instanceof ApiError && loadError.status === 503) {
-          setError("The Render backend is waking up. Refresh again in a few seconds.");
+        if (isCancelled) {
           return;
         }
 
-        setError(loadError instanceof Error ? loadError.message : "Unable to load admin dashboard.");
+        setData(payload);
+        storeCachedDashboard(payload);
+        setError(null);
+        setIsLoading(false);
+      } catch (loadError) {
+        if (isCancelled) {
+          return;
+        }
+
+        if (loadError instanceof ApiError && loadError.status === 503 && attempt < 2) {
+          retryHandle = window.setTimeout(() => {
+            void loadDashboard(attempt + 1);
+          }, 1800 * (attempt + 1));
+          return;
+        }
+
+        if (!hasCachedDashboard) {
+          setError(loadError instanceof Error ? loadError.message : "Unable to load admin dashboard.");
+        }
+
+        setIsLoading(false);
       }
     }
 
     void loadDashboard();
+
+    return () => {
+      isCancelled = true;
+      if (retryHandle) {
+        window.clearTimeout(retryHandle);
+      }
+    };
   }, []);
 
-  if (error) {
-    return <div className="error-banner">{error}</div>;
-  }
-
-  if (!data) {
+  if (isLoading || !data) {
     return <AdminPageShell />;
   }
 
@@ -61,6 +108,8 @@ export function AdminHomePage() {
           </Link>
         </div>
       </section>
+
+      {error ? <div className="error-banner">{error}</div> : null}
 
       <section className="stats-grid">
         <article className="stat-card">

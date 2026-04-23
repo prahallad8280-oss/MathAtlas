@@ -5,6 +5,29 @@ import { useAuth } from "../lib/auth";
 import { AdminPageShell } from "./LoadingShell";
 import type { SiteStats } from "../types";
 
+const SITE_STATS_CACHE_KEY = "mathatlas-admin-site-stats";
+
+function readCachedSiteStats() {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  try {
+    const rawValue = window.sessionStorage.getItem(SITE_STATS_CACHE_KEY);
+    return rawValue ? (JSON.parse(rawValue) as SiteStats) : null;
+  } catch {
+    return null;
+  }
+}
+
+function storeCachedSiteStats(value: SiteStats) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.sessionStorage.setItem(SITE_STATS_CACHE_KEY, JSON.stringify(value));
+}
+
 const navigation = [
   { label: "Dashboard", to: "/admin" },
   { label: "Content Studio", to: "/admin/content" },
@@ -13,19 +36,34 @@ const navigation = [
 export function AdminShell() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
-  const [siteStats, setSiteStats] = useState<SiteStats | null>(null);
+  const [siteStats, setSiteStats] = useState<SiteStats | null>(() => readCachedSiteStats());
 
   useEffect(() => {
+    let isCancelled = false;
+
     async function loadSiteStats() {
       try {
         const payload = await apiRequest<SiteStats>("/meta/site-stats");
+        if (isCancelled) {
+          return;
+        }
+
         setSiteStats(payload);
+        storeCachedSiteStats(payload);
       } catch {
-        setSiteStats(null);
+        if (isCancelled) {
+          return;
+        }
+
+        setSiteStats((current) => current ?? null);
       }
     }
 
     void loadSiteStats();
+
+    return () => {
+      isCancelled = true;
+    };
   }, []);
 
   function handleLogout() {
@@ -96,7 +134,10 @@ export function AdminShell() {
         </main>
 
         <footer className="admin-footer">
-          <span>Public visitor views: {siteStats?.visitorViewCount ?? 0}</span>
+          <span>
+            Public visitor views:{" "}
+            {siteStats ? siteStats.visitorViewCount : <span className="admin-footer-shell" aria-hidden="true" />}
+          </span>
           <span>
             Logged in as {user?.name} ({user?.role})
           </span>
