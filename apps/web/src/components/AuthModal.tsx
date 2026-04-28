@@ -109,12 +109,6 @@ export function AuthModal({ mode, next, onClose, onModeChange }: AuthModalProps)
             Public reading stays open to everyone. Admins and authors use this private popup to enter the
             dashboard or create a new author ID.
           </p>
-          <div className="auth-mode-line">
-            <span>{mode === "login" ? "Already have an account?" : "Need a new account?"}</span>
-            <button className="text-button" onClick={() => onModeChange(mode === "login" ? "create" : "login")} type="button">
-              {mode === "login" ? "Create ID" : "Back to Login"}
-            </button>
-          </div>
         </div>
 
         {mode === "login" ? (

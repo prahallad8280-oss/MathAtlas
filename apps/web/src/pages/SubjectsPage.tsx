@@ -44,7 +44,11 @@ export function SubjectsPage() {
       {Object.entries(grouped)
         .sort(([left], [right]) => left.localeCompare(right))
         .map(([subjectName, subjectQuestions]) => (
-          <section key={subjectName} className="group-section">
+          <section
+            key={subjectName}
+            className="group-section"
+            id={subjectQuestions[0]?.subject.slug ?? subjectName.toLowerCase().replace(/\s+/g, "-")}
+          >
             <div className="group-heading">
               <h3>{subjectName}</h3>
               <span>{subjectQuestions.length} questions</span>

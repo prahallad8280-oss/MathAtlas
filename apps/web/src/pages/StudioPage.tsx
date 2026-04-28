@@ -4,14 +4,15 @@ import { ApiError, apiRequest } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { formatDateTime, excerpt } from "../lib/format";
 import { useKnowledge } from "../lib/knowledge";
-import type { Concept, ConceptType, Counterexample, ExamSession, Question } from "../types";
+import type { Concept, ConceptType, Counterexample, ExamSession, Question, Subject } from "../types";
 
-type TabKey = "questions" | "concepts" | "counterexamples";
+type TabKey = "questions" | "concepts" | "counterexamples" | "subjects";
 
 const tabLabels: Record<TabKey, string> = {
   questions: "Questions",
   concepts: "Concepts",
   counterexamples: "Counterexamples",
+  subjects: "Subjects",
 };
 
 const emptyQuestionForm = {
@@ -34,10 +35,15 @@ const emptyCounterexampleForm = {
   relatedConceptIds: [] as string[],
 };
 
+const emptySubjectForm = {
+  name: "",
+};
+
 type StudioCache = {
   questions: Question[];
   concepts: Concept[];
   counterexamples: Counterexample[];
+  subjects: Subject[];
 };
 
 const STUDIO_CACHE_KEY = "mathatlas-admin-studio";
@@ -71,15 +77,21 @@ export function StudioPage() {
   const [questions, setQuestions] = useState<Question[]>(() => cachedStudio?.questions ?? []);
   const [concepts, setConcepts] = useState<Concept[]>(() => cachedStudio?.concepts ?? []);
   const [counterexamples, setCounterexamples] = useState<Counterexample[]>(() => cachedStudio?.counterexamples ?? []);
+  const [subjects, setSubjects] = useState<Subject[]>(() => cachedStudio?.subjects ?? []);
   const [questionForm, setQuestionForm] = useState(emptyQuestionForm);
   const [conceptForm, setConceptForm] = useState(emptyConceptForm);
   const [counterexampleForm, setCounterexampleForm] = useState(emptyCounterexampleForm);
+  const [subjectForm, setSubjectForm] = useState(emptySubjectForm);
   const [editingQuestionId, setEditingQuestionId] = useState<string | null>(null);
   const [editingConceptId, setEditingConceptId] = useState<string | null>(null);
   const [editingCounterexampleId, setEditingCounterexampleId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isBootstrapping, setIsBootstrapping] = useState(() => cachedStudio === null);
+  const isAdmin = user?.role === "ADMIN";
+  const visibleTabs: TabKey[] = isAdmin
+    ? ["questions", "concepts", "counterexamples", "subjects"]
+    : ["questions", "concepts", "counterexamples"];
 
   async function loadStudioData(preserveExisting = false, attempt = 0) {
     if (!token) {
@@ -88,19 +100,22 @@ export function StudioPage() {
 
     try {
       setError(null);
-      const [questionData, conceptData, counterexampleData] = await Promise.all([
+      const [questionData, conceptData, counterexampleData, subjectData] = await Promise.all([
         apiRequest<Question[]>("/questions", { token }),
         apiRequest<Concept[]>("/concepts", { token }),
         apiRequest<Counterexample[]>("/counterexamples", { token }),
+        apiRequest<Subject[]>("/subjects", { token }),
       ]);
 
       setQuestions(questionData);
       setConcepts(conceptData);
       setCounterexamples(counterexampleData);
+      setSubjects(subjectData);
       storeCachedStudioData({
         questions: questionData,
         concepts: conceptData,
         counterexamples: counterexampleData,
+        subjects: subjectData,
       });
     } catch (loadError) {
       if (loadError instanceof ApiError && loadError.status === 503 && attempt < 2) {
@@ -121,6 +136,12 @@ export function StudioPage() {
   useEffect(() => {
     void loadStudioData();
   }, [token]);
+
+  useEffect(() => {
+    if (!isAdmin && tab === "subjects") {
+      setTab("questions");
+    }
+  }, [isAdmin, tab]);
 
   function canManage(authorId: string) {
     return user?.role === "ADMIN" || user?.id === authorId;
@@ -180,6 +201,18 @@ export function StudioPage() {
     setEditingCounterexampleId(null);
   }
 
+  async function submitSubject() {
+    if (!token) return;
+
+    await apiRequest("/subjects", {
+      method: "POST",
+      token,
+      body: JSON.stringify(subjectForm),
+    });
+
+    setSubjectForm(emptySubjectForm);
+  }
+
   async function handleSave(currentTab: TabKey) {
     try {
       setError(null);
@@ -195,6 +228,10 @@ export function StudioPage() {
 
       if (currentTab === "counterexamples") {
         await submitCounterexample();
+      }
+
+      if (currentTab === "subjects") {
+        await submitSubject();
       }
 
       await loadStudioData(true);
@@ -239,7 +276,7 @@ export function StudioPage() {
       {error ? <div className="error-banner">{error}</div> : null}
 
       <div className="tab-row">
-        {(["questions", "concepts", "counterexamples"] as TabKey[]).map((item) => (
+        {visibleTabs.map((item) => (
           <button
             key={item}
             className={tab === item ? "tab-button active" : "tab-button"}
@@ -558,6 +595,49 @@ export function StudioPage() {
                       </button>
                     </div>
                   ) : null}
+                </div>
+              ))}
+            </div>
+          </article>
+        </div>
+      ) : null}
+
+      {tab === "subjects" && isAdmin ? (
+        <div className="studio-grid">
+          <article className="detail-card">
+            <div className="section-label">Add Subject</div>
+            <div className="stack-form">
+              <label>
+                Subject Name
+                <input
+                  value={subjectForm.name}
+                  onChange={(event) => setSubjectForm({ name: event.target.value })}
+                  placeholder="Linear Algebra"
+                />
+              </label>
+              <div className="button-row">
+                <button className="primary-button" onClick={() => void handleSave("subjects")}>
+                  Add Subject
+                </button>
+                <button className="ghost-button" onClick={() => setSubjectForm(emptySubjectForm)}>
+                  Reset
+                </button>
+              </div>
+            </div>
+          </article>
+
+          <article className="detail-card">
+            <div className="section-label">Manage Subjects</div>
+            <div className="stack-list">
+              {subjects.map((subject) => (
+                <div className="admin-list-card" key={subject.id}>
+                  <strong>{subject.name}</strong>
+                  <span>{subject._count?.questions ?? 0} linked questions</span>
+                  <div className="button-row">
+                    <button className="text-button danger" onClick={() => void handleDelete(`/subjects/${subject.id}`)}>
+                      Remove
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>

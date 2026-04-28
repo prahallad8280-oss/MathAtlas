@@ -1,6 +1,8 @@
-import { FormEvent, Suspense, lazy, useEffect, useState } from "react";
-import { NavLink, Outlet, useNavigate, useSearchParams } from "react-router-dom";
+import { FormEvent, Suspense, lazy, useEffect, useMemo, useState } from "react";
+import { Link, NavLink, Outlet, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { apiRequest } from "../lib/api";
+import { fallbackSubjects } from "../lib/fallbackData";
+import type { Subject } from "../types";
 import { HomeSectionShell } from "./LoadingShell";
 
 const AuthModal = lazy(() =>
@@ -8,15 +10,18 @@ const AuthModal = lazy(() =>
 );
 
 const navigation = [
-  { label: "Home", to: "/" },
-  { label: "Defination/Theorem", to: "/concepts" },
-  { label: "Counterexamples", to: "/counterexamples" },
-];
+  { key: "question-bank", label: "Question Bank", to: "/questions" },
+  { key: "concept", label: "Concept", to: "/concepts?type=DEFINITION" },
+  { key: "theory", label: "Theorem/Result", to: "/concepts?type=THEORY" },
+  { key: "counterexamples", label: "Counterexample", to: "/counterexamples" },
+] as const;
 
 export function PublicShell() {
+  const location = useLocation();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState("");
+  const [subjects, setSubjects] = useState<Subject[]>(fallbackSubjects);
   const [isDarkMode, setIsDarkMode] = useState(() => {
     if (typeof window === "undefined") {
       return false;
@@ -26,6 +31,19 @@ export function PublicShell() {
   });
   const authMode = searchParams.get("auth");
   const next = searchParams.get("next");
+
+  useEffect(() => {
+    async function loadSubjects() {
+      try {
+        const payload = await apiRequest<Subject[]>("/meta/subjects");
+        setSubjects(payload.length > 0 ? payload : fallbackSubjects);
+      } catch {
+        setSubjects(fallbackSubjects);
+      }
+    }
+
+    void loadSubjects();
+  }, []);
 
   useEffect(() => {
     const sessionKey = "mathatlas-visitor-view-recorded";
@@ -84,6 +102,40 @@ export function PublicShell() {
     const query = searchQuery.trim();
 
     navigate(query ? `/search?q=${encodeURIComponent(query)}` : "/search");
+  }
+
+  const menuSubjects = useMemo(
+    () => (subjects.length > 0 ? subjects : fallbackSubjects).slice().sort((left, right) => left.name.localeCompare(right.name)),
+    [subjects],
+  );
+
+  function isNavActive(key: (typeof navigation)[number]["key"]) {
+    const currentType = searchParams.get("type");
+
+    if (key === "question-bank") {
+      return location.pathname === "/questions" || location.pathname.startsWith("/questions/");
+    }
+
+    if (key === "concept") {
+      return location.pathname === "/concepts" && currentType !== "THEORY";
+    }
+
+    if (key === "theory") {
+      return location.pathname === "/concepts" && currentType === "THEORY";
+    }
+
+    return location.pathname === "/counterexamples" || location.pathname.startsWith("/counterexamples/");
+  }
+
+  function getSubjectLink(
+    key: (typeof navigation)[number]["key"],
+    subject: Subject,
+  ) {
+    if (key === "question-bank") {
+      return `/questions?subject=${subject.slug}`;
+    }
+
+    return `/subjects#${subject.slug}`;
   }
 
   return (
@@ -158,15 +210,29 @@ export function PublicShell() {
         </div>
 
         <nav className="public-nav">
+          <NavLink to="/" end className={({ isActive }) => (isActive ? "public-nav-link active" : "public-nav-link")}>
+            Home
+          </NavLink>
+
           {navigation.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.to === "/"}
-              className={({ isActive }) => (isActive ? "public-nav-link active" : "public-nav-link")}
-            >
-              {item.label}
-            </NavLink>
+            <div className="public-nav-item" key={item.key}>
+              <Link className={isNavActive(item.key) ? "public-nav-link active" : "public-nav-link"} to={item.to}>
+                {item.label}
+              </Link>
+              <div className="public-nav-dropdown" role="menu" aria-label={`${item.label} subjects`}>
+                <div className="public-nav-dropdown-list">
+                  {menuSubjects.map((subject) => (
+                    <Link
+                      className="public-nav-dropdown-link"
+                      key={`${item.key}-${subject.id}`}
+                      to={getSubjectLink(item.key, subject)}
+                    >
+                      {subject.name}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            </div>
           ))}
         </nav>
       </header>

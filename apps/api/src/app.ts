@@ -7,6 +7,7 @@ import counterexampleRoutes from "./routes/counterexamples.js";
 import metaRoutes from "./routes/meta.js";
 import questionRoutes from "./routes/questions.js";
 import searchRoutes from "./routes/search.js";
+import subjectRoutes from "./routes/subjects.js";
 import { config } from "./config.js";
 import { prisma } from "./lib/prisma.js";
 
@@ -61,6 +62,7 @@ app.get("/api/health/db", async (_req, res) => {
 
 app.use("/api/auth", authRoutes);
 app.use("/api/meta", metaRoutes);
+app.use("/api/subjects", subjectRoutes);
 app.use("/api/questions", questionRoutes);
 app.use("/api/concepts", conceptRoutes);
 app.use("/api/counterexamples", counterexampleRoutes);

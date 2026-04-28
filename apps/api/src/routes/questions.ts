@@ -4,6 +4,7 @@ import { z } from "zod";
 import { asyncHandler } from "../lib/asyncHandler.js";
 import { prisma } from "../lib/prisma.js";
 import { resolveKnowledgeLinks } from "../lib/content.js";
+import { findOrCreateSubjectByName } from "../lib/subjects.js";
 import { slugify } from "../lib/slug.js";
 import { ensureOwnershipOrAdmin, requireAuth, requireRole } from "../middleware/auth.js";
 
@@ -45,17 +46,6 @@ const ensureUniqueQuestionSlug = async (
     counter += 1;
     candidate = `${slug}-${counter}`;
   }
-};
-
-const upsertSubject = async (subjectName: string) => {
-  const normalized = subjectName.trim();
-  const slug = slugify(normalized);
-
-  return prisma.subject.upsert({
-    where: { name: normalized },
-    update: { slug },
-    create: { name: normalized, slug },
-  });
 };
 
 router.get("/", asyncHandler(async (req, res) => {
@@ -130,7 +120,7 @@ router.post("/", requireAuth, requireRole(Role.ADMIN, Role.AUTHOR), asyncHandler
     return res.status(400).json({ message: "Invalid question payload.", issues: parsed.error.flatten() });
   }
 
-  const subject = await upsertSubject(parsed.data.subjectName);
+  const subject = await findOrCreateSubjectByName(parsed.data.subjectName);
   const baseSlug = buildQuestionSlug(
     parsed.data.questionText,
     parsed.data.year,
@@ -185,7 +175,7 @@ router.put("/:id", requireAuth, requireRole(Role.ADMIN, Role.AUTHOR), asyncHandl
     return res.status(403).json({ message: "You can only edit your own questions unless you are an admin." });
   }
 
-  const subject = await upsertSubject(parsed.data.subjectName);
+  const subject = await findOrCreateSubjectByName(parsed.data.subjectName);
   const baseSlug = buildQuestionSlug(
     parsed.data.questionText,
     parsed.data.year,
